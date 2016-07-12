@@ -5,6 +5,7 @@
 #include "RooFormulaVar.h"
 #include "RooMsgService.h"
 #include "TPaveText.h"
+#include "TF1.h"
 
 #include "boost/lexical_cast.hpp"
 
@@ -18,7 +19,7 @@ InitialFit::InitialFit(RooRealVar *massVar, RooRealVar *MHvar, int mhLow, int mh
   MH(MHvar),
   mhLow_(mhLow),
   mhHigh_(mhHigh),
-	skipMasses_(skipMasses),
+  skipMasses_(skipMasses),
   verbosity_(0),
   binnedFit_(binnedFit),
   bins_(bins)
@@ -26,19 +27,36 @@ InitialFit::InitialFit(RooRealVar *massVar, RooRealVar *MHvar, int mhLow, int mh
   allMH_ = getAllMH();
 }
 
+InitialFit::InitialFit(RooRealVar *BDTVar, RooRealVar *MHvar, int mhLow, int mhHigh, float minBDT, float maxBDT, std::vector<int> skipMasses, bool binnedFit, int bins):
+  BDTG(BDTVar),
+  MH(MHvar),
+  mhLow_(mhLow),
+  mhHigh_(mhHigh),
+  minBDT_(minBDT),
+  maxBDT_(maxBDT),
+  skipMasses_(skipMasses),
+  verbosity_(0),
+  binnedFit_(binnedFit),
+  bins_(bins)
+{
+  allMH_ = getAllMH();
+}
+
+
+
 InitialFit::~InitialFit(){}
 
 bool InitialFit::skipMass(int mh){
-	for (vector<int>::iterator it=skipMasses_.begin(); it!=skipMasses_.end(); it++) {
-		if (*it==mh) return true;
-	}
-	return false;
+  for (vector<int>::iterator it=skipMasses_.begin(); it!=skipMasses_.end(); it++) {
+    if (*it==mh) return true;
+  }
+  return false;
 }
 
 vector<int> InitialFit::getAllMH(){
   vector<int> result;
   for (int m=mhLow_; m<=mhHigh_; m+=5){
-		if (skipMass(m)) continue;
+    if (skipMass(m)) continue;
     if (verbosity_>=1) cout << "[INFO] LinearInterp - Adding mass: " << m << endl;
     result.push_back(m);
   }
@@ -159,17 +177,31 @@ void InitialFit::saveParamsToFileAtMH(string filename, int setMH){
   datfile.close();
 }
 
+void InitialFit::saveBDTParamsToFileAtMH(string filename, int setMH){
+  ofstream datfile;
+  datfile.open(filename.c_str());
+  for (unsigned int i=0; i<allMH_.size(); i++){
+    int mh = allMH_[i];
+    for (map<string,RooRealVar*>::iterator it=fitParamsBDT[setMH].begin(); it!=fitParamsBDT[setMH].end(); it++){
+      string repName = it->first;
+      repName = repName.replace(repName.find(Form("mh%d",setMH)),5,Form("mh%d",mh));
+      datfile << Form("%s %1.5f",repName.c_str(),it->second->getVal()) << endl;
+    }
+  }
+  datfile.close();
+}
+
 map<int,map<string,RooRealVar*> > InitialFit::getFitParams(){
   return fitParams;
 }
 
 void InitialFit::printFitParams(){
-	cout << "[INFO] Printing fit param map: " << endl;
-	for (map<int,map<string,RooRealVar*> >::iterator it = fitParams.begin(); it != fitParams.end(); it++){
-		for (map<string,RooRealVar*>::iterator it2 = it->second.begin(); it2 != it->second.end(); it2++){
-			cout << it->first << " : " << it2->first << " -- " << it2->second->getVal() << endl; 
-		}
-	}
+  cout << "[INFO] Printing fit param map: " << endl;
+  for (map<int,map<string,RooRealVar*> >::iterator it = fitParams.begin(); it != fitParams.end(); it++){
+    for (map<string,RooRealVar*>::iterator it2 = it->second.begin(); it2 != it->second.end(); it2++){
+      cout << it->first << " : " << it2->first << " -- " << it2->second->getVal() << endl; 
+    }
+  }
 }
 
 void InitialFit::runFits(int ncpu){
@@ -185,15 +217,15 @@ void InitialFit::runFits(int ncpu){
     //RooDataSet *data = datasets[mh];
     RooAbsData *data;
     if (binnedFit_){
-    data = datasets[mh]->binnedClone();
+      data = datasets[mh]->binnedClone();
     } else {
-    data = datasets[mh];
+      data = datasets[mh];
     }
-		// help when dataset has no entries
-		if (data->sumEntries()<1.e-5) {
-			mass->setVal(mh);
-			data->add(RooArgSet(*mass),1.e-5);
-		}
+    // help when dataset has no entries
+    if (data->sumEntries()<1.e-5) {
+      mass->setVal(mh);
+      data->add(RooArgSet(*mass),1.e-5);
+    }
     //fitModel->Print();
     //data->Print();
     RooFitResult *fitRes;
@@ -201,26 +233,105 @@ void InitialFit::runFits(int ncpu){
     verbosity_ >=3 ?
       fitRes = fitModel->fitTo(*data,NumCPU(ncpu),RooFit::Minimizer("Minuit","minimize"),SumW2Error(true),Save(true)) :
       verbosity_ >=2 ?
-        fitRes = fitModel->fitTo(*data,NumCPU(ncpu),RooFit::Minimizer("Minuit","minimize"),SumW2Error(true),Save(true),PrintLevel(-1)) :
-        fitRes = fitModel->fitTo(*data,NumCPU(ncpu),RooFit::Minimizer("Minuit","minimize"),SumW2Error(true),Save(true),PrintLevel(-1),PrintEvalErrors(-1));
+      fitRes = fitModel->fitTo(*data,NumCPU(ncpu),RooFit::Minimizer("Minuit","minimize"),SumW2Error(true),Save(true),PrintLevel(-1)) :
+      fitRes = fitModel->fitTo(*data,NumCPU(ncpu),RooFit::Minimizer("Minuit","minimize"),SumW2Error(true),Save(true),PrintLevel(-1),PrintEvalErrors(-1));
     fitResults.insert(pair<int,RooFitResult*>(mh,fitRes));
     mass->setBins(160); //return to default 
   }
 }
 
+void InitialFit::buildBDTpdf(string name){
+
+  for (unsigned int i=0; i<allMH_.size(); i++){
+    int mh = allMH_[i];
+    MH->setConstant(false);
+    MH->setVal(mh);
+    MH->setConstant(true);
+ 
+    TF1 *vbffunc = new TF1("vbffunc","([4]*([0]+[1]*x+[2]*x*x)*exp([3]*sqrt(1.-x)))",minBDT_,maxBDT_);
+    //float vbfh1entries = h1BDTSig.GetEntries();
+    vbffunc->SetParameter(0,3.44236e+00);
+    vbffunc->SetParameter(1,-5.95520e+00);
+    vbffunc->SetParameter(2,3.02832e+00);
+    vbffunc->SetParameter(3,-5.52535e+00);
+    //vbffunc->FixParameter(4,vbfh1entries);
+    RooRealVar *vb0 = new RooRealVar(Form("vb0_mh%d",mh),Form("vb0_mh%d",mh),vbffunc->GetParameter(0),-10000000,10000000) ; 
+    RooRealVar *vb1 = new RooRealVar(Form("vb1_mh%d",mh),Form("vb1_mh%d",mh),vbffunc->GetParameter(1),-10000000,10000000) ; 
+    RooRealVar *vb2 = new RooRealVar(Form("vb2_mh%d",mh),Form("vb2_mh%d",mh),vbffunc->GetParameter(2),-10000000,10000000) ; 
+    RooRealVar *vb3 = new RooRealVar(Form("vb3_mh%d",mh),Form("vb3_mh%d",mh),vbffunc->GetParameter(3),-10000,10000) ; 
+    RooRealVar *vb4 = new RooRealVar(Form("vb4_mh%d",mh),Form("vb4_mh%d",mh),vbffunc->GetParameter(4),0,100000000) ; 
+    vb0->setConstant(true);
+    vb1->setConstant(true);
+    vb2->setConstant(true);
+    vb3->setConstant(true);
+    vb4->setConstant(true);
+ 
+    RooGenericPdf *tempBDTpdf = new RooGenericPdf(Form("%s_mh%d",name.c_str(),mh),Form("%s_mh%d",name.c_str(),mh),"vb4*(vb0+vb1*BDTG+vb2*BDTG*BDTG)*exp(vb3*sqrt(1.-BDTG))",RooArgSet(*BDTG,*vb0,*vb1,*vb2,*vb3,*vb4)); 
+
+    map<string,RooRealVar*> tempFitParams;
+    tempFitParams.insert(pair<string,RooRealVar*>(string(vb0->GetName()),vb0));
+    tempFitParams.insert(pair<string,RooRealVar*>(string(vb1->GetName()),vb1));
+    tempFitParams.insert(pair<string,RooRealVar*>(string(vb2->GetName()),vb2));
+    tempFitParams.insert(pair<string,RooRealVar*>(string(vb3->GetName()),vb3));
+    tempFitParams.insert(pair<string,RooRealVar*>(string(vb4->GetName()),vb4));
+
+    fitParamsBDT.insert(pair<int,map<string,RooRealVar*> >(mh,tempFitParams));
+
+    BDTpdf.insert(pair<int,RooGenericPdf*>(mh,tempBDTpdf));
+
+  }
+}
+
+void InitialFit::runFitsBDT(int ncpu){
+  
+  for (unsigned int i=0; i<allMH_.size(); i++){
+    int mh = allMH_[i];
+    MH->setConstant(false);
+    MH->setVal(mh);
+    MH->setConstant(true);
+    assert(BDTpdf.find(mh)!=BDTpdf.end());
+    assert(datasets.find(mh)!=datasets.end());
+    RooGenericPdf *BDTModel = BDTpdf[mh];
+    //RooDataSet *data = datasets[mh];
+    RooAbsData *data;
+    if (binnedFit_){
+      data = datasets[mh]->binnedClone();
+    } else {
+      data = datasets[mh];
+    }
+    // help when dataset has no entries
+    // if (data->sumEntries()<1.e-5) {
+    //   mass->setVal(mh);
+    //   data->add(RooArgSet(*mass),1.e-5);
+    // }
+    //fitModel->Print();
+    //data->Print();
+    RooFitResult *fitRes;
+    BDTG->setBins(bins_);
+    verbosity_ >=3 ?
+      fitRes = BDTModel->fitTo(*data,NumCPU(ncpu),RooFit::Minimizer("Minuit","minimize"),SumW2Error(true),Save(true)) :
+      verbosity_ >=2 ?
+      fitRes = BDTModel->fitTo(*data,NumCPU(ncpu),RooFit::Minimizer("Minuit","minimize"),SumW2Error(true),Save(true),PrintLevel(-1)) :
+      fitRes = BDTModel->fitTo(*data,NumCPU(ncpu),RooFit::Minimizer("Minuit","minimize"),SumW2Error(true),Save(true),PrintLevel(-1),PrintEvalErrors(-1));
+    fitResultsBDT.insert(pair<int,RooFitResult*>(mh,fitRes));
+
+  }
+}
+
+
 void InitialFit::setFitParams(std::map<int,std::map<std::string,RooRealVar*> >& pars )
 {
-	for(map<int,map<string,RooRealVar*> >::iterator ipar = pars.begin(); ipar!=pars.end(); ++ipar ) {
-		int mh = ipar->first;
-		map<string,RooRealVar*>& vars = ipar->second;
-		std::map<std::string,RooRealVar*> myParams = fitParams[mh];
-		for(std::map<std::string,RooRealVar*>::iterator ivar=vars.begin(); ivar!=vars.end(); ++ivar){
-			//// std::cout << "Setting " << ivar->first << " to " << ivar->second->getVal() << " " <<
-			//// 	myParams[ivar->first]->getVal() << " " << myParams[ivar->first]->GetName() <<
-			//// 	ivar->second->GetName() << std::endl;
-			myParams[ivar->first]->setVal(ivar->second->getVal());
-		}
-	}
+  for(map<int,map<string,RooRealVar*> >::iterator ipar = pars.begin(); ipar!=pars.end(); ++ipar ) {
+    int mh = ipar->first;
+    map<string,RooRealVar*>& vars = ipar->second;
+    std::map<std::string,RooRealVar*> myParams = fitParams[mh];
+    for(std::map<std::string,RooRealVar*>::iterator ivar=vars.begin(); ivar!=vars.end(); ++ivar){
+      //// std::cout << "Setting " << ivar->first << " to " << ivar->second->getVal() << " " <<
+      //// 	myParams[ivar->first]->getVal() << " " << myParams[ivar->first]->GetName() <<
+      //// 	ivar->second->GetName() << std::endl;
+      myParams[ivar->first]->setVal(ivar->second->getVal());
+    }
+  }
 }
 
 
@@ -245,11 +356,11 @@ void InitialFit::plotFits(string name, string rvwv){
     data->plotOn(plot,MarkerColor(kBlue+10*i));
     fitModel->plotOn(plot,LineColor(kBlue-1+10*i));
     if( (TString(datasets[mh]->GetName()))!=(TString(datasetsSTD[mh]->GetName()))){
-    pt->SetTextColor(kRed);
-    pt->AddText(Form(" %d replacement :",mh));
-    pt->AddText(Form(" %s",data->GetName())); 
+      pt->SetTextColor(kRed);
+      pt->AddText(Form(" %d replacement :",mh));
+      pt->AddText(Form(" %s",data->GetName())); 
     } else {
-    pt->AddText(Form(" %d: %s",mh,data->GetName())); 
+      pt->AddText(Form(" %d: %s",mh,data->GetName())); 
     }
   }
   plot->SetTitle(Form("%s %s Fits",(datasetsSTD[125]->GetName()),rvwv.c_str()));
@@ -258,5 +369,41 @@ void InitialFit::plotFits(string name, string rvwv){
   canv->Print(Form("%s.pdf",name.c_str()));
   canv->Print(Form("%s.png",name.c_str()));
   mass->setBins(160); //return to default 
+  delete canv;
+}
+
+
+void InitialFit::plotFitsBDT(string name, string bdtg){
+  
+  TCanvas *canv = new TCanvas();
+  RooPlot *plot = BDTG->frame(Range(minBDT_-0.1,maxBDT_+0.1));
+  TPaveText *pt = new TPaveText(.65,.6,.97,.95,"NDC");
+  for (unsigned int i=0; i<allMH_.size(); i++){
+    int mh = allMH_[i];
+    MH->setConstant(false);
+    MH->setVal(mh);
+    MH->setConstant(true);
+    assert(BDTpdf.find(mh)!=BDTpdf.end());
+    assert(datasets.find(mh)!=datasets.end());
+    RooGenericPdf *BDTModel = BDTpdf[mh];
+    BDTG->setBins(bins_);
+    RooDataHist *data = new RooDataHist(datasets[mh]->GetName(),datasets[mh]->GetName(), RooArgSet(*BDTG),*datasets[mh]);
+    //RooDataHist *data = datasets[mh]->binnedClone();
+    //data->plotOn(plot,Binning(160),MarkerColor(kBlue+10*i));
+    data->plotOn(plot,MarkerColor(kBlue+10*i));
+    BDTModel->plotOn(plot,LineColor(kBlue-1+10*i));
+    if( (TString(datasets[mh]->GetName()))!=(TString(datasetsSTD[mh]->GetName()))){
+      pt->SetTextColor(kRed);
+      pt->AddText(Form(" %d replacement :",mh));
+      pt->AddText(Form(" %s",data->GetName())); 
+    } else {
+      pt->AddText(Form(" %d: %s",mh,data->GetName())); 
+    }
+  }
+  plot->SetTitle(Form("%s %s Fits",(datasetsSTD[125]->GetName()),bdtg.c_str()));
+  plot->Draw();
+  pt->Draw();
+  canv->Print(Form("%s.pdf",name.c_str()));
+  canv->Print(Form("%s.png",name.c_str()));
   delete canv;
 }
