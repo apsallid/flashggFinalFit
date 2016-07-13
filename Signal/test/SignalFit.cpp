@@ -270,6 +270,7 @@ RooDataSet * reduceDataset(RooDataSet *data0){
 
   RooDataSet *data = (RooDataSet*) data0->emptyClone()->reduce(RooArgSet(*mass_, *dijet_mva_, *dZ_));
   RooRealVar *weight0 = new RooRealVar("weight","weight",-100000,1000000);
+  // std::cout << "============= " << data0->numEntries() <<std::endl;
   for (int i=0 ; i < data0->numEntries() ; i++){
     mass_->setVal(data0->get(i)->getRealValue("CMS_hgg_mass"));
     dijet_mva_->setVal(data0->get(i)->getRealValue("dijet_mva"));
@@ -761,7 +762,7 @@ int main(int argc, char *argv[]){
     //!!!Hardcode for now, should fix this
     float minBDT_=0.2;
     float maxBDT_=1.0;
-    int BDTBins=3000; //gives better S
+    int BDTBins=300;
     InitialFit initFitBDT(dijet_mva_,MH,mhLow_,mhHigh_,minBDT_,maxBDT_,skipMasses_,binnedFit_,BDTBins);
     initFitBDT.setVerbosity(verbose_);
     if (!cloneFits_) {
@@ -771,7 +772,7 @@ int main(int argc, char *argv[]){
       initFitBDT.setDatasets(datasets);
       if (verbose_) std::cout << "[INFO] BDT running fits" << std::endl;
       initFitBDT.runFitsBDT(ncpu_);
-      if (!runInitialFitsOnly_ && !replace_) {
+      if (!runInitialFitsOnly_ && !replace_) { 
         initFitBDT.saveBDTParamsToFileAtMH(Form("dat/in/%s_%s_BDT.dat",proc.c_str(),cat.c_str()),constraintValueMass_);
 	initFitBDT.runFitsBDT(ncpu_);
       }

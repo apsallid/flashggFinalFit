@@ -249,24 +249,30 @@ void InitialFit::buildBDTpdf(string name){
     MH->setConstant(true);
  
     TF1 *vbffunc = new TF1("vbffunc","([4]*([0]+[1]*x+[2]*x*x)*exp([3]*sqrt(1.-x)))",minBDT_,maxBDT_);
-    //float vbfh1entries = h1BDTSig.GetEntries();
+    //float vbfh1entries = h1BDTSig.numEntries);
     vbffunc->SetParameter(0,3.44236e+00);
     vbffunc->SetParameter(1,-5.95520e+00);
     vbffunc->SetParameter(2,3.02832e+00);
     vbffunc->SetParameter(3,-5.52535e+00);
-    //vbffunc->FixParameter(4,vbfh1entries);
-    RooRealVar *vb0 = new RooRealVar(Form("vb0_mh%d",mh),Form("vb0_mh%d",mh),vbffunc->GetParameter(0),-10000000,10000000) ; 
-    RooRealVar *vb1 = new RooRealVar(Form("vb1_mh%d",mh),Form("vb1_mh%d",mh),vbffunc->GetParameter(1),-10000000,10000000) ; 
-    RooRealVar *vb2 = new RooRealVar(Form("vb2_mh%d",mh),Form("vb2_mh%d",mh),vbffunc->GetParameter(2),-10000000,10000000) ; 
-    RooRealVar *vb3 = new RooRealVar(Form("vb3_mh%d",mh),Form("vb3_mh%d",mh),vbffunc->GetParameter(3),-10000,10000) ; 
-    RooRealVar *vb4 = new RooRealVar(Form("vb4_mh%d",mh),Form("vb4_mh%d",mh),vbffunc->GetParameter(4),0,100000000) ; 
+    vbffunc->FixParameter(4,200.0e+00);
+    // RooRealVar *vb0 = new RooRealVar(Form("vb0_mh%d",mh),Form("vb0_mh%d",mh),vbffunc->GetParameter(0),-10000000,10000000) ; 
+    // RooRealVar *vb1 = new RooRealVar(Form("vb1_mh%d",mh),Form("vb1_mh%d",mh),vbffunc->GetParameter(1),-10000000,10000000) ; 
+    // RooRealVar *vb2 = new RooRealVar(Form("vb2_mh%d",mh),Form("vb2_mh%d",mh),vbffunc->GetParameter(2),-10000000,10000000) ; 
+    // RooRealVar *vb3 = new RooRealVar(Form("vb3_mh%d",mh),Form("vb3_mh%d",mh),vbffunc->GetParameter(3),-10000,10000) ; 
+    // RooRealVar *vb4 = new RooRealVar(Form("vb4_mh%d",mh),Form("vb4_mh%d",mh),vbffunc->GetParameter(4),0,100000000) ; 
+    RooRealVar *vb0 = new RooRealVar(Form("vb0_mh%d",mh),Form("vb0_mh%d",mh),3.44236e+00,-10000000,10000000) ; 
+    RooRealVar *vb1 = new RooRealVar(Form("vb1_mh%d",mh),Form("vb1_mh%d",mh),-5.95520e+00,-10000000,10000000) ; 
+    RooRealVar *vb2 = new RooRealVar(Form("vb2_mh%d",mh),Form("vb2_mh%d",mh),3.02832e+00,-10000000,10000000) ; 
+    RooRealVar *vb3 = new RooRealVar(Form("vb3_mh%d",mh),Form("vb3_mh%d",mh),-5.52535e+00,-10000,10000) ; 
+    RooRealVar *vb4 = new RooRealVar(Form("vb4_mh%d",mh),Form("vb4_mh%d",mh),200.0e+00,0,100000000) ; 
     vb0->setConstant(true);
     vb1->setConstant(true);
     vb2->setConstant(true);
     vb3->setConstant(true);
     vb4->setConstant(true);
  
-    RooGenericPdf *tempBDTpdf = new RooGenericPdf(Form("%s_mh%d",name.c_str(),mh),Form("%s_mh%d",name.c_str(),mh),"vb4*(vb0+vb1*BDTG+vb2*BDTG*BDTG)*exp(vb3*sqrt(1.-BDTG))",RooArgSet(*BDTG,*vb0,*vb1,*vb2,*vb3,*vb4)); 
+    // RooGenericPdf *tempBDTpdf = new RooGenericPdf(Form("%s_mh%d",name.c_str(),mh),Form("%s_mh%d",name.c_str(),mh),"vb4*(vb0+vb1*BDTG+vb2*BDTG*BDTG)*exp(vb3*sqrt(1.-BDTG))",RooArgList(*BDTG,*vb0,*vb1,*vb2,*vb3,*vb4)); 
+    RooGenericPdf *tempBDTpdf = new RooGenericPdf(Form("%s_mh%d",name.c_str(),mh),Form("%s_mh%d",name.c_str(),mh),"@5*(@1+@2*@0+@3*@0*@0)*exp(@4*sqrt(1.-(@0)))",RooArgList(*BDTG,*vb0,*vb1,*vb2,*vb3,*vb4)); 
 
     map<string,RooRealVar*> tempFitParams;
     tempFitParams.insert(pair<string,RooRealVar*>(string(vb0->GetName()),vb0));
