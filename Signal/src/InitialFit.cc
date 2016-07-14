@@ -264,7 +264,7 @@ void InitialFit::buildBDTpdf(string name){
     RooRealVar *vb1 = new RooRealVar(Form("vb1_mh%d",mh),Form("vb1_mh%d",mh),-5.95520e+00,-10000000,10000000) ; 
     RooRealVar *vb2 = new RooRealVar(Form("vb2_mh%d",mh),Form("vb2_mh%d",mh),3.02832e+00,-10000000,10000000) ; 
     RooRealVar *vb3 = new RooRealVar(Form("vb3_mh%d",mh),Form("vb3_mh%d",mh),-5.52535e+00,-10000,10000) ; 
-    RooRealVar *vb4 = new RooRealVar(Form("vb4_mh%d",mh),Form("vb4_mh%d",mh),200.0e+00,0,100000000) ; 
+    RooRealVar *vb4 = new RooRealVar(Form("vb4_mh%d",mh),Form("vb4_mh%d",mh),77663.,0,100000000) ; 
     vb0->setConstant(true);
     vb1->setConstant(true);
     vb2->setConstant(true);

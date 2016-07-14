@@ -12,7 +12,7 @@ LinearInterp::LinearInterp(RooRealVar *MHvar, int mhLow, int mhHigh, map<int,map
   fitParams(fitParamVals),
   doSecondaryModels(doSecMods),
   secondaryModelVarsSet(false),
-	skipMasses_(skipMasses),
+  skipMasses_(skipMasses),
   verbosity_(0)
 {
   allMH_ = getAllMH();
@@ -21,16 +21,16 @@ LinearInterp::LinearInterp(RooRealVar *MHvar, int mhLow, int mhHigh, map<int,map
 LinearInterp::~LinearInterp(){}
 
 bool LinearInterp::skipMass(int mh){
-	for (vector<int>::iterator it=skipMasses_.begin(); it!=skipMasses_.end(); it++) {
-		if (*it==mh) return true;
-	}
-	return false;
+  for (vector<int>::iterator it=skipMasses_.begin(); it!=skipMasses_.end(); it++) {
+    if (*it==mh) return true;
+  }
+  return false;
 }
 
 vector<int> LinearInterp::getAllMH(){
   vector<int> result;
   for (int m=mhLow_; m<=mhHigh_; m+=5){
-		if (skipMass(m)) continue;
+    if (skipMass(m)) continue;
     if (verbosity_>=1) cout << "[INFO] LinearInterp - Adding mass: " << m << endl;
     result.push_back(m);
   }
@@ -61,7 +61,7 @@ void LinearInterp::interpolate(int nGaussians){
     assert(xValues.size()==sigmaValues.size());
     //RooSpline1D *dmSpline = new RooSpline1D(Form("dm_g%d",g),Form("dm_g%d",g),*MH,xValues.size(),&(xValues[0]),&(dmValues[0]),"LINEAR");
     RooSpline1D *dmSpline = new RooSpline1D(Form("dm_g%d",g),Form("dm_g%d",g),*MH,xValues.size(),&(xValues[0]),&(dmValues[0]));
-   // RooSpline1D *sigmaSpline = new RooSpline1D(Form("sigma_g%d",g),Form("sigma_g%d",g),*MH,xValues.size(),&(xValues[0]),&(sigmaValues[0]),"LINEAR");
+    // RooSpline1D *sigmaSpline = new RooSpline1D(Form("sigma_g%d",g),Form("sigma_g%d",g),*MH,xValues.size(),&(xValues[0]),&(sigmaValues[0]),"LINEAR");
     RooSpline1D *sigmaSpline = new RooSpline1D(Form("sigma_g%d",g),Form("sigma_g%d",g),*MH,xValues.size(),&(xValues[0]),&(sigmaValues[0]));
     splines.insert(pair<string,RooSpline1D*>(dmSpline->GetName(),dmSpline));
     splines.insert(pair<string,RooSpline1D*>(sigmaSpline->GetName(),sigmaSpline));
@@ -102,6 +102,45 @@ void LinearInterp::interpolate(int nGaussians){
     }
   }
 }
+
+void LinearInterp::interpolate(){
+ 
+  vector<double> xValues;
+  vector<double> vb0Values, vb1Values, vb2Values, vb3Values, vb4Values;
+  for (unsigned int i=0; i<allMH_.size(); i++){
+    int mh = allMH_[i];
+    xValues.push_back(double(mh));
+    vb0Values.push_back(fitParams[mh][Form("vb0_mh%d",mh)]->getVal());
+    vb1Values.push_back(fitParams[mh][Form("vb1_mh%d",mh)]->getVal());
+    vb2Values.push_back(fitParams[mh][Form("vb2_mh%d",mh)]->getVal());
+    vb3Values.push_back(fitParams[mh][Form("vb3_mh%d",mh)]->getVal());
+    vb4Values.push_back(fitParams[mh][Form("vb4_mh%d",mh)]->getVal());
+  }
+  assert(xValues.size()==vb0Values.size());
+  assert(xValues.size()==vb1Values.size());
+  assert(xValues.size()==vb2Values.size());
+  assert(xValues.size()==vb3Values.size());
+  assert(xValues.size()==vb4Values.size());
+  RooSpline1D *vb0Spline = new RooSpline1D("vb0","vb0",*MH,xValues.size(),&(xValues[0]),&(vb0Values[0]));
+  RooSpline1D *vb1Spline = new RooSpline1D("vb1","vb1",*MH,xValues.size(),&(xValues[0]),&(vb1Values[0]));
+  RooSpline1D *vb2Spline = new RooSpline1D("vb2","vb2",*MH,xValues.size(),&(xValues[0]),&(vb2Values[0]));
+  RooSpline1D *vb3Spline = new RooSpline1D("vb3","vb3",*MH,xValues.size(),&(xValues[0]),&(vb3Values[0]));
+  RooSpline1D *vb4Spline = new RooSpline1D("vb4","vb4",*MH,xValues.size(),&(xValues[0]),&(vb4Values[0]));
+
+  splines.insert(pair<string,RooSpline1D*>(vb0Spline->GetName(),vb0Spline));
+  splines.insert(pair<string,RooSpline1D*>(vb1Spline->GetName(),vb1Spline));
+  splines.insert(pair<string,RooSpline1D*>(vb2Spline->GetName(),vb2Spline));
+  splines.insert(pair<string,RooSpline1D*>(vb3Spline->GetName(),vb3Spline));
+  splines.insert(pair<string,RooSpline1D*>(vb4Spline->GetName(),vb4Spline));
+
+}
+
+
+
+
+
+
+
 
 map<string,RooSpline1D*> LinearInterp::getSplines(){
   return splines;

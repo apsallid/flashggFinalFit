@@ -20,6 +20,7 @@ class LinearInterp {
 
     void setSecondaryModelVars(RooRealVar *mh_sm, RooRealVar *deltam, RooAddition *mh_2, RooRealVar *width);
     void interpolate(int nGaussians);
+    void interpolate();
     std::map<std::string,RooSpline1D*> getSplines();
     void setVerbosity(int v);
 

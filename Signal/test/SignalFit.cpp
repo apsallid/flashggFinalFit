@@ -778,14 +778,16 @@ int main(int argc, char *argv[]){
       }
       if (!skipPlots_) initFitBDT.plotFits(Form("%s/initialFits/%s_%s_BDT",plotDir_.c_str(),proc.c_str(),cat.c_str()),"BDT");
     }
-
-    
+    parlist_t fitParamsBDT = initFitBDT.getFitParams();
+    //--------------------------------------------------------------------------------------
+   
     //Ok, now that we have made the fit parameters eitehr with the regular dataset or the replacement one.
     // Now we should be using the ORIGINAL dataset
     if (!runInitialFitsOnly_) {
       //these guys do the interpolation
       map<string,RooSpline1D*> splinesRV;
       map<string,RooSpline1D*> splinesWV;
+      map<string,RooSpline1D*> splinesBDT;
 
       if (!cloneFits_){
         // right vertex
@@ -801,6 +803,13 @@ int main(int argc, char *argv[]){
         linInterpWV.setSecondaryModelVars(MH_SM,DeltaM,MH_2,higgsDecayWidth);
         linInterpWV.interpolate(nGaussiansWV);
         splinesWV = linInterpWV.getSplines();
+
+        // BDT 
+        LinearInterp linInterpBDT(MH,mhLow_,mhHigh_,fitParamsBDT,doSecondaryModels_,skipMasses_);
+        linInterpBDT.setVerbosity(verbose_);
+        linInterpBDT.setSecondaryModelVars(MH_SM,DeltaM,MH_2,higgsDecayWidth);
+        linInterpBDT.interpolate();
+        splinesBDT = linInterpBDT.getSplines();
       }
       else {
         splinesRV = cloneSplinesMapRV[make_pair(proc,cat)];
