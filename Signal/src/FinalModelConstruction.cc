@@ -40,8 +40,9 @@ template<class ResultT, class SourceT, class PredicateT> typename ResultT::itera
   return dst.begin()+orig_size;
 }
 
-FinalModelConstruction::FinalModelConstruction(RooRealVar *massVar, RooRealVar *MHvar, RooRealVar *intL, int mhLow, int mhHigh, string proc, string cat, bool doSecMods, string systematicsFileName, vector<int> skipMasses, int verbosity,std::vector<std::string> procList, std::vector<std::string> flashggCats , string outDir, bool isProblemCategory ,bool isCB, int sqrts, bool quadraticSigmaSum)	:
+FinalModelConstruction::FinalModelConstruction(RooRealVar *massVar, RooRealVar *BDTGVar, RooRealVar *MHvar, RooRealVar *intL, int mhLow, int mhHigh, string proc, string cat, bool doSecMods, string systematicsFileName, vector<int> skipMasses, int verbosity,std::vector<std::string> procList, std::vector<std::string> flashggCats , string outDir, bool isProblemCategory ,bool isCB, int sqrts, bool quadraticSigmaSum)	:
   mass(massVar),
+  BDTG(BDTGVar),
   MH(MHvar),
   intLumi(intL),
   mhLow_(mhLow),
@@ -382,6 +383,33 @@ void FinalModelConstruction::loadSignalSystematics(string filename){
 	RooConstVar *rateChVar = new RooConstVar(Form("const_%s_%s_%dTeV_rate_%s",proc.c_str(),catname.c_str(),sqrts_,phoSystName.c_str()),Form("const_%s_%s_%dTeV_rate_%s",proc.c_str(),catname.c_str(),sqrts_,phoSystName.c_str()),rateCh);
 	photonSystematicConsts.insert(make_pair(rateChVar->GetName(),rateChVar));
       }
+      //Now for our new function and variables. We will assume that these will be added in the 
+      //dat/photonCatSyst.dat file as columns after the rate_change column. To keep a convention
+      //which we will need later the name of the variables in these column will be also used 
+      //in the RooConstVar name and photonSystematicConsts. We need this to call them later. 
+      vector<double> vb;
+      vb.push_back(lexical_cast<double>(els[4]));
+      vb.push_back(lexical_cast<double>(els[5]));
+      vb.push_back(lexical_cast<double>(els[6]));
+      vb.push_back(lexical_cast<double>(els[7]));
+      vb.push_back(lexical_cast<double>(els[8]));
+      int countvars = 0;
+      for (vector<double>::iterator it=vb.begin(); it!=vb.end(); it++){
+	if( (*it) != 0. ) {
+	  string varname = Form("vb%d",countvars);
+	  string catname;
+	  if (sqrts_==8 || sqrts_==7) catname=Form("cat%d",diphotonCat);
+	  if (sqrts_ ==13) catname = Form("%s",flashggCats_[diphotonCat].c_str());
+	  addToSystMap(varSysts,proc,diphotonCat,phoSystName,(*it));
+	  RooConstVar *vbChVar = new RooConstVar(Form("const_%s_%s_%dTeV_%s_%s",proc.c_str(),catname.c_str(),sqrts_,varname.c_str(),phoSystName.c_str()),Form("const_%s_%s_%dTeV_%s_%s",proc.c_str(),catname.c_str(),sqrts_,varname.c_str(),phoSystName.c_str()),(*it));
+	  photonSystematicConsts.insert(make_pair(vbChVar->GetName(),vbChVar));
+	}
+	++countvars;
+      }
+      
+
+
+
     }
   }
   datfile.close();
@@ -592,6 +620,123 @@ void FinalModelConstruction::getRvFractionFunc(string name){
     rvFracFunc_NW = new RooSpline1D(Form("%s_NW",name.c_str()),name.c_str(),*MH,mhValues.size(),&(mhValues[0]),&(rvFracValues[0]));
   }
   rvFractionSet_=true;
+}
+
+void FinalModelConstruction::buildBDTPdf(string name){
+  string catname;
+  if (sqrts_==8 || sqrts_==7) catname=Form("cat%s",cat_.c_str());
+  if (sqrts_ ==13) catname = Form("%s",cat_.c_str());
+
+  if (!systematicsSet_) setupSystematics();
+
+  finalPdf_BDT = buildtheBDTPdf(name, BDTSplines,Form("_bdt_%dTeV",sqrts_));
+ 
+}
+
+RooGenericPdf* FinalModelConstruction::buildtheBDTPdf(string name, map<string,RooSpline1D*> splines, string thebdt){
+  
+  string catname;
+  if (sqrts_==8 || sqrts_==7) catname=Form("cat%s",cat_.c_str());
+  if (sqrts_ ==13) catname = Form("%s",cat_.c_str());
+  string ext = Form("%s_%s%s",proc_.c_str(),catname.c_str(),thebdt.c_str());
+
+  //loads of debug/validation plots and holders for the data
+  // TMultiGraph *MG_vb0 = new TMultiGraph();
+  // TMultiGraph *MG_vb1 = new TMultiGraph();
+  // TMultiGraph *MG_vb2 = new TMultiGraph();
+  // TMultiGraph *MG_vb3 = new TMultiGraph();
+  // TMultiGraph *MG_vb4 = new TMultiGraph();
+
+  // TCanvas *c = new TCanvas();
+
+  vector < RooAbsReal *> vb0_vect; 
+  vector < RooAbsReal *> vb1_vect; 
+  vector < RooAbsReal *> vb2_vect; 
+  vector < RooAbsReal *> vb3_vect; 
+  vector < RooAbsReal *> vb4_vect; 
+
+  // TGraph *  vb0Graphs;
+  // TGraph *  vb1Graphs;
+  // TGraph *  vb2Graphs;
+  // TGraph *  vb3Graphs;
+  // TGraph *  vb4Graphs;
+
+  RooAbsReal *vb0_fit = splines["vb0"];
+  RooAbsReal *vb1_fit = splines["vb1"];
+  RooAbsReal *vb2_fit = splines["vb2"];
+  RooAbsReal *vb3_fit = splines["vb3"];
+  RooAbsReal *vb4_fit = splines["vb4"];
+
+  vb0_fit->SetName(Form("vb0_%s",ext.c_str()));
+  vb1_fit->SetName(Form("vb1_%s",ext.c_str()));
+  vb2_fit->SetName(Form("vb2_%s",ext.c_str()));
+  vb3_fit->SetName(Form("vb3_%s",ext.c_str()));
+  vb4_fit->SetName(Form("vb4_%s",ext.c_str()));
+
+  RooAbsReal *vb0sys = getVariableWithPhotonSyst(vb0_fit,Form("varvb0_%s",ext.c_str()),"vb0");
+  RooAbsReal *vb1sys = getVariableWithPhotonSyst(vb1_fit,Form("varvb1_%s",ext.c_str()),"vb1");
+  RooAbsReal *vb2sys = getVariableWithPhotonSyst(vb2_fit,Form("varvb2_%s",ext.c_str()),"vb2");
+  RooAbsReal *vb3sys = getVariableWithPhotonSyst(vb3_fit,Form("varvb3_%s",ext.c_str()),"vb3");
+  RooAbsReal *vb4sys = getVariableWithPhotonSyst(vb4_fit,Form("varvb4_%s",ext.c_str()),"vb4");
+
+  RooGenericPdf *tempBDTpdf = new RooGenericPdf(Form("generic_%s",ext.c_str()),Form("generic_%s",ext.c_str()),"vb4sys*(vb0sys+vb1sys*BDTG+vb2sys*BDTG*BDTG)*exp(vb3sys*sqrt(1.-BDTG))",RooArgList(*BDTG,*vb0sys,*vb1sys,*vb2sys,*vb3sys,*vb4sys)); 
+  
+  return tempBDTpdf;
+
+}
+
+RooAbsReal* FinalModelConstruction::getVariableWithPhotonSyst(RooAbsReal *var_fit, string name, string varname){
+  string catname;
+  if (sqrts_==8 || sqrts_==7) catname=Form("cat%s",cat_.c_str());
+  if (sqrts_ ==13) catname = Form("%s",cat_.c_str());
+
+  string formula="@0*";
+  RooArgList *dependents = new RooArgList();
+  dependents->add(*var_fit); // var_fit sits at @0
+  formula += "TMath::Max(1.e-2,(1.";
+
+  // check for global scales first
+  for (unsigned int i=0; i<systematicsList.size(); i++){
+    string syst = systematicsList[i];
+    int formPlace = dependents->getSize();
+    if (isGlobalSyst(syst)) {
+      RooAbsReal *nuisScale = photonSystematics[Form("CMS_hgg_nuisance_%s",syst.c_str())];
+      formula += Form("+@%d",formPlace);
+      // should check special extras 
+      float additionalFactor = getRequiredAddtionalGlobalScaleFactor(syst);
+      if (additionalFactor>-999) formula += Form("*%3.1f",additionalFactor);
+      dependents->add(*nuisScale);
+    }
+  }
+  // then do per photon scales
+  for (unsigned int i=0; i<systematicsList.size(); i++){
+    string syst = systematicsList[i];
+    int formPlace = dependents->getSize();
+    bool hasEffect = false;
+    if (isPerCatSyst(syst)) {
+
+      if (photonSystematicConsts.find(Form("const_%s_%s_%dTeV_%s_%s",proc_.c_str(),catname.c_str(),sqrts_,varname.c_str(),syst.c_str())) != photonSystematicConsts.end() ) {
+	RooConstVar *constVar = photonSystematicConsts[Form("const_%s_%s_%dTeV_%s_%s",proc_.c_str(),catname.c_str(),sqrts_,varname.c_str(),syst.c_str())];
+	RooAbsReal *nuisVar = photonSystematics[Form("CMS_hgg_nuisance_%s",syst.c_str())];
+	if( verbosity_ ) { 
+	  std::cout << "[INFO] Systematic " << syst << std::endl;
+	  nuisVar->Print("V");
+	}
+	if ( fabs(constVar->getVal())>=5.e-5) { 
+	  hasEffect = true;
+	  formula += Form("+@%d*@%d",formPlace,formPlace+1);
+	  dependents->add(*constVar);
+	  dependents->add(*nuisVar);
+	}
+      }
+      if (verbosity_ && !hasEffect) {
+	cout << "[WARNING] -- systematic " << syst << " is found to have no effect on the scale for category " << catname.c_str() << " and process " << proc_ << " so it is being skipped." << endl;
+      }
+    }
+  }
+  formula+=")";
+  RooFormulaVar *formVar = new RooFormulaVar(name.c_str(),name.c_str(),formula.c_str(),*dependents);
+  return formVar;
 }
 
 RooAbsReal* FinalModelConstruction::getMeanWithPhotonSyst(RooAbsReal *dm, string name, bool isMH2, bool isMHSM){
@@ -1039,6 +1184,10 @@ void FinalModelConstruction::setWVsplines(map<string,RooSpline1D*> splines){
   wvSplines = splines;
 }
 
+void FinalModelConstruction::setBDTsplines(map<string,RooSpline1D*> splines){
+  BDTSplines = splines;
+}
+
 void FinalModelConstruction::setSTDsplines(map<string,RooSpline1D*> splines){
   stdSplines = splines;
 }
@@ -1059,6 +1208,9 @@ void FinalModelConstruction::setWVdatasets(map<int,RooDataSet*> data){
   wvDatasets = data;
 }
 
+void FinalModelConstruction::setBDTdatasets(map<int,RooDataSet*> data){
+  BDTDatasets = data;
+}
 
 void FinalModelConstruction::setSTDdatasets(map<int,RooDataSet*> data){
   stdDatasets = data;
@@ -1075,6 +1227,7 @@ void FinalModelConstruction::makeSTDdatasets(){
     int mh=allMH_[i];
     RooDataSet *data = (RooDataSet*)rvDatasets[mh]->Clone(Form("sig_%s_mass_m%d_%s",proc_.c_str(),mh,catname.c_str()));
     data->append(*wvDatasets[mh]);
+    data->append(*BDTDatasets[mh]);
     stdDatasets.insert(pair<int,RooDataSet*>(mh,data));
   }	
 }
@@ -1087,6 +1240,7 @@ void FinalModelConstruction::makeFITdatasets(){
     int mh=allMH_[i];
     RooDataSet *data = (RooDataSet*)rvFITDatasets[mh]->Clone(Form("sig_%s_mass_m%d_%s",proc_.c_str(),mh,catname.c_str()));
     data->append(*wvFITDatasets[mh]);
+    data->append(*BDTDatasets[mh]);
     fitDatasets.insert(pair<int,RooDataSet*>(mh,data));
   }	
 }
@@ -1308,6 +1462,7 @@ void FinalModelConstruction::save(RooWorkspace *work){
   work->import(*finalPdf,RecycleConflictNodes());
   work->import(*finalNorm,RecycleConflictNodes());
   work->import(*finalNormThisLum,RecycleConflictNodes());
+  work->import(*finalPdf_BDT,RecycleConflictNodes());
   work->import(*extendPdf,RecycleConflictNodes());
   work->import(*extendPdfRel,RecycleConflictNodes());
   for (map<int,RooDataSet*>::iterator it=stdDatasets.begin(); it!=stdDatasets.end(); it++){

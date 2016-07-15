@@ -125,8 +125,8 @@ map<string,RooDataSet*> getFlashggDataGranular(RooWorkspace *work, int ncats, in
 
 	map<string,RooDataSet*> result;
 
-	for (int cat=0; cat<ncats; cat++){
-    for (int proc=0; proc < procs_.size() ; proc++){
+	for ( int cat=0; cat<ncats; cat++){
+    for (unsigned int proc=0; proc < procs_.size() ; proc++){
 		result.insert(pair<string,RooDataSet*>(Form("%s_%s",procs_[proc].c_str(),flashggCats_[cat].c_str()),(RooDataSet*)work->data(Form("sig_%s_mass_m%3d_%s",procs_[proc].c_str(),m_hyp,flashggCats_[cat].c_str()))));
     assert(work->data(Form("sig_%s_mass_m%3d_%s",procs_[proc].c_str(),m_hyp,flashggCats_[cat].c_str())));
 	  }
@@ -161,7 +161,7 @@ map<string,RooAddPdf*> getFlashggPdfsGranular(RooWorkspace *work, int ncats){
 
 	map<string,RooAddPdf*> result;
 	for (int cat=0; cat<ncats; cat++){
-    for (int proc=0; proc< procs_.size() ; proc++){
+    for (unsigned int proc=0; proc< procs_.size() ; proc++){
 		result.insert(pair<string,RooAddPdf*>(Form("%s_%s",procs_[proc].c_str(),flashggCats_[cat].c_str()),(RooAddPdf*)work->pdf((Form("extendhggpdfsmrel_13TeV_%s_%sThisLumi",procs_[proc].c_str(),flashggCats_[cat].c_str())))));
   assert(work->pdf((Form("extendhggpdfsmrel_13TeV_%s_%sThisLumi",procs_[proc].c_str(),flashggCats_[cat].c_str()))));
 	}
@@ -390,7 +390,7 @@ void Plot(RooRealVar *mass, RooDataSet *data, RooAbsPdf *pdf, pair<double,double
   plot->SetMinimum(0.0);
   if (markNegativeBins_){
   TH1F *rdh = (TH1F*) data->createHistogram("CMS_hgg_mass",*mass,Binning(binning_,105,140));
-  for(unsigned int iBin =0 ; iBin < rdh->GetNbinsX() ; iBin++){
+  for(int iBin =0 ; iBin < rdh->GetNbinsX() ; iBin++){
   float content = rdh->GetBinContent(iBin);
   float center = rdh->GetBinCenter(iBin);
   if(content <0) {

@@ -329,7 +329,7 @@ int main(int argc, char *argv[]){
         dataWV = (RooDataSet*) data0->emptyClone()->reduce(RooArgSet(*mass, *dZ));
 
 
-        for (unsigned int i=0 ; i < data0->numEntries() ; i++){
+        for (int i=0 ; i < data0->numEntries() ; i++){
             mass->setVal(data0->get(i)->getRealValue("CMS_hgg_mass"));
             weight0->setVal(data0->weight() ); // <--- is this correct?
             dZ->setVal(data0->get(i)->getRealValue("dZ"));

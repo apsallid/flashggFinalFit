@@ -10,6 +10,7 @@
 #include "RooGaussian.h"
 #include "RooAddPdf.h"
 #include "RooGenericPdf.h"
+#include "RooPolynomial.h"
 #include "RooDataSet.h"
 #include "RooDataHist.h"
 #include "RooRealVar.h"
@@ -47,11 +48,11 @@ class InitialFit {
     RooRealVar *BDTG;
     RooRealVar *MH;
     std::map<int,RooAddPdf*> sumOfGaussians;
-    std::map<int,RooGenericPdf*> BDTpdf;
+    std::map<int,RooGenericPdf*> BDTpdf; 
     std::map<int,RooDataSet*> datasets; 
     std::map<int,RooDataSet*> datasetsSTD; 
     std::map<int,std::map<std::string,RooRealVar*> > fitParams;
-    std::map<int,std::map<std::string,RooRealVar*> > fitParamsBDT;
+    std::map<int,std::map<std::string,RooRealVar*> > fitParamsBDT; 
     std::map<int,std::map<std::string,RooAbsReal*> > fitUtils;
     std::map<int,std::map<std::string,RooGaussian*> > initialGaussians;
     std::map<int,RooFitResult*> fitResults;

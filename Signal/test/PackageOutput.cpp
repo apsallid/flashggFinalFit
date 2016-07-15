@@ -129,7 +129,7 @@ int main (int argc, char *argv[]){
   
   TFile *outFile = new TFile(outfilename_.c_str(),"RECREATE");
 
-  RooRealVar *intLumi = new RooRealVar("IntLumi","IntLumi",lumi_*1000,0.,10.e5);
+  // RooRealVar *intLumi = new RooRealVar("IntLumi","IntLumi",lumi_*1000,0.,10.e5);
 
   	
 	  WSTFileWrapper * inWS = new WSTFileWrapper(infilename_,"wsig_13TeV");
@@ -137,7 +137,7 @@ int main (int argc, char *argv[]){
 	  RooWorkspace *tmpWS = new RooWorkspace();
     //saveWS->import((inWS->allVars()),RecycleConflictNodes());
     //saveWS->import((inWS->allFunctions()),RecycleConflictNodes());
-    for (int i=0 ; i < inWS->getWsList().size() ; i++){
+    for (unsigned int i=0 ; i < inWS->getWsList().size() ; i++){
     inWS->getWsList()[i]->Print();
     if (i==0) tmpWS = (RooWorkspace*) inWS->getWsList()[i]->Clone();
     if (!tmpWS){ std::cout << "EXIT" << std::endl;  exit(1);}

@@ -819,13 +819,14 @@ int main(int argc, char *argv[]){
       if (isFlashgg_){
         
         outWS->import(*intLumi_);
-        FinalModelConstruction finalModel(mass_,MH,intLumi_,mhLow_,mhHigh_,proc,cat,doSecondaryModels_,systfilename_,skipMasses_,verbose_,procs_, flashggCats_,plotDir_, isProblemCategory,isCutBased_,sqrts_,doQuadraticSigmaSum_);
+        FinalModelConstruction finalModel(mass_,dijet_mva_,MH,intLumi_,mhLow_,mhHigh_,proc,cat,doSecondaryModels_,systfilename_,skipMasses_,verbose_,procs_, flashggCats_,plotDir_, isProblemCategory,isCutBased_,sqrts_,doQuadraticSigmaSum_);
         
         finalModel.setSecondaryModelVars(MH_SM,DeltaM,MH_2,higgsDecayWidth);
         finalModel.setRVsplines(splinesRV);
         finalModel.setWVsplines(splinesWV);
         finalModel.setRVdatasets(datasetsRV);
         finalModel.setWVdatasets(datasetsWV);
+        finalModel.setBDTdatasets(datasets);
         finalModel.setFITRVdatasets(FITdatasetsRV);
         finalModel.setFITWVdatasets(FITdatasetsWV);
         //finalModel.setSTDdatasets(datasets);
@@ -833,6 +834,7 @@ int main(int argc, char *argv[]){
         finalModel.makeFITdatasets();
         if( isFlashgg_){
           finalModel.buildRvWvPdf("hggpdfsmrel_13TeV",nGaussiansRV,nGaussiansWV,recursive_);
+          finalModel.buildBDTPdf("bdtpdfsmrel_13TeV");
         }
         finalModel.getNormalization();
         if (!skipPlots_) finalModel.plotPdf(plotDir_);

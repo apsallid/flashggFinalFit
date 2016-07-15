@@ -100,7 +100,7 @@ int main(int argc, char *argv[]){
                 r.Rndm();
                 double x[dataset->numEntries()];
                 r.RndmArray(dataset->numEntries(),x);
-                int desiredEntries = floor(0.5+ dataset->numEntries()*fraction_);
+                // int desiredEntries = floor(0.5+ dataset->numEntries()*fraction_);
                 int modFraction = floor(0.5+ 1/fraction_);
                 int finalEventCount=0;
                 for (int j =0; j < dataset->numEntries() ; j++){

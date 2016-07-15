@@ -260,8 +260,13 @@ void InitialFit::buildBDTpdf(string name){
     // RooRealVar *vb2 = new RooRealVar(Form("vb2_mh%d",mh),Form("vb2_mh%d",mh),vbffunc->GetParameter(2),-10000000,10000000) ; 
     // RooRealVar *vb3 = new RooRealVar(Form("vb3_mh%d",mh),Form("vb3_mh%d",mh),vbffunc->GetParameter(3),-10000,10000) ; 
     // RooRealVar *vb4 = new RooRealVar(Form("vb4_mh%d",mh),Form("vb4_mh%d",mh),vbffunc->GetParameter(4),0,100000000) ; 
-    RooRealVar *vb0 = new RooRealVar(Form("vb0_mh%d",mh),Form("vb0_mh%d",mh),3.44236e+00,-10000000,10000000) ; 
-    RooRealVar *vb1 = new RooRealVar(Form("vb1_mh%d",mh),Form("vb1_mh%d",mh),-5.95520e+00,-10000000,10000000) ; 
+    // RooRealVar *vb0 = new RooRealVar(Form("vb0_mh%d",mh),Form("vb0_mh%d",mh),3.44236e+00,-10000000,10000000) ; 
+    // RooRealVar *vb1 = new RooRealVar(Form("vb1_mh%d",mh),Form("vb1_mh%d",mh),-5.95520e+00,-10000000,10000000) ; 
+    // RooRealVar *vb2 = new RooRealVar(Form("vb2_mh%d",mh),Form("vb2_mh%d",mh),3.02832e+00,-10000000,10000000) ; 
+    // RooRealVar *vb3 = new RooRealVar(Form("vb3_mh%d",mh),Form("vb3_mh%d",mh),-5.52535e+00,-10000,10000) ; 
+    // RooRealVar *vb4 = new RooRealVar(Form("vb4_mh%d",mh),Form("vb4_mh%d",mh),77663.,0,100000000) ; 
+    RooRealVar *vb0 = new RooRealVar(Form("vb0_mh%d",mh),Form("vb0_mh%d",mh),-0.304,-5,5) ; 
+    RooRealVar *vb1 = new RooRealVar(Form("vb1_mh%d",mh),Form("vb1_mh%d",mh),0.35,-1,1) ; 
     RooRealVar *vb2 = new RooRealVar(Form("vb2_mh%d",mh),Form("vb2_mh%d",mh),3.02832e+00,-10000000,10000000) ; 
     RooRealVar *vb3 = new RooRealVar(Form("vb3_mh%d",mh),Form("vb3_mh%d",mh),-5.52535e+00,-10000,10000) ; 
     RooRealVar *vb4 = new RooRealVar(Form("vb4_mh%d",mh),Form("vb4_mh%d",mh),77663.,0,100000000) ; 
@@ -272,8 +277,8 @@ void InitialFit::buildBDTpdf(string name){
     vb4->setConstant(true);
  
     // RooGenericPdf *tempBDTpdf = new RooGenericPdf(Form("%s_mh%d",name.c_str(),mh),Form("%s_mh%d",name.c_str(),mh),"vb4*(vb0+vb1*BDTG+vb2*BDTG*BDTG)*exp(vb3*sqrt(1.-BDTG))",RooArgList(*BDTG,*vb0,*vb1,*vb2,*vb3,*vb4)); 
-    RooGenericPdf *tempBDTpdf = new RooGenericPdf(Form("%s_mh%d",name.c_str(),mh),Form("%s_mh%d",name.c_str(),mh),"@5*(@1+@2*@0+@3*@0*@0)*exp(@4*sqrt(1.-(@0)))",RooArgList(*BDTG,*vb0,*vb1,*vb2,*vb3,*vb4)); 
-
+    // RooGenericPdf *tempBDTpdf = new RooGenericPdf(Form("%s_mh%d",name.c_str(),mh),Form("%s_mh%d",name.c_str(),mh),"@5*(@1+@2*@0+@3*@0*@0)*exp(@4*sqrt(1.-(@0)))",RooArgList(*BDTG,*vb0,*vb1,*vb2,*vb3,*vb4)); 
+    RooGenericPdf *tempBDTpdf = new RooGenericPdf(Form("%s_mh%d",name.c_str(),mh),Form("%s_mh%d",name.c_str(),mh),"@1+(@0*@2)",RooArgList(*BDTG,*vb0,*vb1)); 
     map<string,RooRealVar*> tempFitParams;
     tempFitParams.insert(pair<string,RooRealVar*>(string(vb0->GetName()),vb0));
     tempFitParams.insert(pair<string,RooRealVar*>(string(vb1->GetName()),vb1));

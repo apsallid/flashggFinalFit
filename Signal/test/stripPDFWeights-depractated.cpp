@@ -110,7 +110,7 @@ int main(int argc, char *argv[]){
 	            //string zhname  =(string) TPython::Eval(Form("'%s'.replace(\"wzh\",\"zh\")",dataset->GetName())); 
 	            //string whname  =(string) TPython::Eval(Form("'%s'.replace(\"wzh\",\"wh\")",dataset->GetName())); 
               std::cout << " ORIGINAL DATASET " << *dataset << std::endl; 
-              RooDataSet *datasetNewTmp = (RooDataSet*) dataset->emptyClone();
+              // RooDataSet *datasetNewTmp = (RooDataSet*) dataset->emptyClone();
             ///  std::cout << " EMPTY    DATASET " << *datasetNewTmp << std::endl; 
               RooArgSet* targetArguments = ((RooArgSet*) dataset->get());
               RooArgSet* removeArguments = ((RooArgSet*) dataset->get()->selectByName("pdf*,alpha*,scale*"));
