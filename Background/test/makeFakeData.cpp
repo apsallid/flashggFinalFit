@@ -735,7 +735,7 @@ int main(int argc, char* argv[]){
   cdtof->cd();    // make the "tof" directory the current director
 	RooWorkspace *outWS = new RooWorkspace("multipdf");
 
-  for (int icat =0 ; icat < flashggCats_.size() ; icat ++){
+  for (unsigned int icat =0 ; icat < flashggCats_.size() ; icat ++){
 
   string catname;
   catname=flashggCats_[icat];
@@ -879,10 +879,11 @@ int main(int argc, char* argv[]){
   if (doSignal){ // not really option, if this is false teh program will end
     // open that signal model!
     TFile *sigFile = TFile::Open(sigFileName.c_str());
+    std::cout << "[INFO] Opened file " << sigFile->GetName() << std::endl;
     // from sigfit
     WSTFileWrapper *w_sig = new WSTFileWrapper(sigFileName,"wsig_13TeV");
     if (!w_sig) { //from workspaces directly... this probably will not work. shoudl delete this option #FIXME
-       WSTFileWrapper *w_sig = new WSTFileWrapper(sigFileName,"cms_hgg_workspace");
+       // WSTFileWrapper *w_sig = new WSTFileWrapper(sigFileName,"cms_hgg_workspace");
     }
     if (!w_sig) {
       cout << "[INFO] " << "Signal workspace not found. exit" << endl;

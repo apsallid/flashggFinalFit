@@ -106,28 +106,28 @@ RooAbsPdf* PdfModelBuilder::getBernstein(string prefix, int order){
   }
   //RooBernstein *bern = new RooBernstein(prefix.c_str(),prefix.c_str(),*obs_var,*coeffList);
   if (order==1) {
-	RooBernsteinFast<1> *bern = new RooBernsteinFast<1>(prefix.c_str(),prefix.c_str(),*obs_var,*coeffList);
-  	return bern;
+    RooBernsteinFast<1> *bern = new RooBernsteinFast<1>(prefix.c_str(),prefix.c_str(),*obs_var,*coeffList);
+    return bern;
   } else if (order==2) {
-	RooBernsteinFast<2> *bern = new RooBernsteinFast<2>(prefix.c_str(),prefix.c_str(),*obs_var,*coeffList);
-  	return bern;
+    RooBernsteinFast<2> *bern = new RooBernsteinFast<2>(prefix.c_str(),prefix.c_str(),*obs_var,*coeffList);
+    return bern;
   } else if (order==3) {
-	RooBernsteinFast<3> *bern = new RooBernsteinFast<3>(prefix.c_str(),prefix.c_str(),*obs_var,*coeffList);
-  	return bern;
+    RooBernsteinFast<3> *bern = new RooBernsteinFast<3>(prefix.c_str(),prefix.c_str(),*obs_var,*coeffList);
+    return bern;
   } else if (order==4) {
-	RooBernsteinFast<4> *bern = new RooBernsteinFast<4>(prefix.c_str(),prefix.c_str(),*obs_var,*coeffList);
-  	return bern;
+    RooBernsteinFast<4> *bern = new RooBernsteinFast<4>(prefix.c_str(),prefix.c_str(),*obs_var,*coeffList);
+    return bern;
   } else if (order==5) {
-	RooBernsteinFast<5> *bern = new RooBernsteinFast<5>(prefix.c_str(),prefix.c_str(),*obs_var,*coeffList);
-  	return bern;
+    RooBernsteinFast<5> *bern = new RooBernsteinFast<5>(prefix.c_str(),prefix.c_str(),*obs_var,*coeffList);
+    return bern;
   } else if (order==6) {
-	RooBernsteinFast<6> *bern = new RooBernsteinFast<6>(prefix.c_str(),prefix.c_str(),*obs_var,*coeffList);
-  	return bern;
-//  } else if (order==7) {
-//	RooBernsteinFast<7> *bern = new RooBernsteinFast<7>(prefix.c_str(),prefix.c_str(),*obs_var,*coeffList);
- // 	return bern;
+    RooBernsteinFast<6> *bern = new RooBernsteinFast<6>(prefix.c_str(),prefix.c_str(),*obs_var,*coeffList);
+    return bern;
+    //  } else if (order==7) {
+    //	RooBernsteinFast<7> *bern = new RooBernsteinFast<7>(prefix.c_str(),prefix.c_str(),*obs_var,*coeffList);
+    // 	return bern;
   } else {
-	return NULL;
+    return NULL;
   }
   //return bern;
   //bkgPdfs.insert(pair<string,RooAbsPdf*>(bern->GetName(),bern));
@@ -482,8 +482,8 @@ void PdfModelBuilder::plotPdfsToData(RooAbsData *data, int binning, string name,
     RooPlot *plot = obs_var->frame();
     data->plotOn(plot,Binning(binning));
     if (specificPdfName!="NONE") {
-	 it->second->plotOn(plot);
-	 it->second->paramOn(plot,RooFit::Layout(0.34,0.96,0.89),RooFit::Format("NEA",AutoPrecision(1)));
+      it->second->plotOn(plot);
+      it->second->paramOn(plot,RooFit::Layout(0.34,0.96,0.89),RooFit::Format("NEA",AutoPrecision(1)));
     }	
     plot->Draw();
     canv->Print(Form("%s_%s.pdf",name.c_str(),it->first.c_str()));
@@ -544,7 +544,7 @@ RooDataSet* PdfModelBuilder::makeHybridDataset(vector<float> switchOverMasses, v
   obs_var->Print("v");
   assert(cut_strings.size()==dataForHybrid.size());
   
-	RooDataSet *data=0;// avoid uninitialised variable error in cmssw  
+  RooDataSet *data=0;// avoid uninitialised variable error in cmssw  
   for (unsigned int i=0; i<dataForHybrid.size(); i++){
     RooDataSet *cutData = (RooDataSet*)dataForHybrid[i]->reduce(Name("hybridToy"),Title("hybridToy"),CutRange(cut_strings[i].c_str()));
     //RooDataSet *cutData = new RooDataSet("hybridToy","hybridToy",RooArgSet(*obs_var),Import(*dataForHybrid[i]),CutRange(cut_strings[i].c_str()));

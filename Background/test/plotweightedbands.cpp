@@ -120,7 +120,7 @@ Double_t effSigma(TH1 * hist, double quantile=TMath::Erf(1.0/sqrt(2.0)))
     cout << "effsigma: Not a valid histo. bwid = " << bwid << endl;
     return 0.;
   }
-  Double_t xmax = xaxis->GetXmax();
+  // Double_t xmax = xaxis->GetXmax();
   Double_t xmin = xaxis->GetXmin();
   Double_t ave = hist->GetMean();
   Double_t rms = hist->GetRMS();
@@ -204,7 +204,7 @@ int main(int argc, char *argv[]) {
   gSystem->mkdir(dirname,true);
   gSystem->cd(dirname);
   
-  const double leftpos = 102.0;
+  // const double leftpos = 102.0;
    
    
   TFile *fin = TFile::Open(filename_[0].c_str());
@@ -232,13 +232,13 @@ int main(int argc, char *argv[]) {
   
   win->loadSnapshot("MultiDimFit"); 
 
-  RooFitResult *fit_s = 0;
+  // RooFitResult *fit_s = 0;
   
   
-  TFile *ftmp = new TFile("tmpfile.root","RECREATE");
+  // TFile *ftmp = new TFile("tmpfile.root","RECREATE");
   
   RooRealVar *MH = win->var("MH");
-  RooRealVar *r = win->var("r");
+  // RooRealVar *r = win->var("r");
 
   RooSimultaneous *sbpdf = (RooSimultaneous*)win->pdf("model_s");
   RooSimultaneous *bpdf = (RooSimultaneous*)win->pdf("model_b");
@@ -254,7 +254,7 @@ int main(int argc, char *argv[]) {
   RooRealVar *massrel = new RooRealVar("massrel","",1.0,0.0,10.0);
   massrel->removeRange();
   
-  RooRealVar *sigmaeff = new RooRealVar("sigmaeff","",1.0,0.0,10.0);
+  // RooRealVar *sigmaeff = new RooRealVar("sigmaeff","",1.0,0.0,10.0);
   RooRealVar *sob = new RooRealVar("sob","",1.0,0.0,10.0);
   sob->removeRange();
 
@@ -264,13 +264,13 @@ int main(int argc, char *argv[]) {
   RooRealVar *llrweight = new RooRealVar("llrweight","",1.0,0.0,10.0);
   llrweight->removeRange();  
   
-  RooFormulaVar *massrelf = new RooFormulaVar("massrel","","(@0-@1)/@2",RooArgList(*mass,*MH,*sigmaeff));
+  // RooFormulaVar *massrelf = new RooFormulaVar("massrel","","(@0-@1)/@2",RooArgList(*mass,*MH,*sigmaeff));
   
   std::vector<double> sigmaeffs;
   
   RooDataSet *wdata = new RooDataSet("wdata","",RooArgSet(*chan,*mass,*sobres),"sobres");
   RooDataSet *wdatarel = new RooDataSet("wdata","",RooArgSet(*chan,*massrel,*sob),"sob");  
-  RooDataSet *wdatallr = new RooDataSet("wdata","",RooArgSet(*chan,*mass,*llrweight),"llrweight");
+  // RooDataSet *wdatallr = new RooDataSet("wdata","",RooArgSet(*chan,*mass,*llrweight),"llrweight");
   
   
   double nbweight = 0;
@@ -427,7 +427,7 @@ int main(int argc, char *argv[]) {
 
     double sbevents = sbcatpdf->expectedEvents(*mass);    
     double bevents = bcatpdf->expectedEvents(*mass);
-    double sevents = sbevents - bevents;
+    // double sevents = sbevents - bevents;
     
     TH1D *hsbtmp = (TH1D*)sbcatpdf->createHistogram("hsbtmp",*mass,Binning(3200));
     TH1D *hbtmp = (TH1D*) bcatpdf->createHistogram("hbtmp",*mass,Binning(3200));
@@ -510,11 +510,11 @@ int main(int argc, char *argv[]) {
   new TCanvas;
   hsig->Draw();
   
-  double sigmaeffall = effSigma(hsig);
-  double sigmaeffw = effSigma(hwsig);
-  double iqr = 2.0*effSigma(hsig,0.5);
+  // double sigmaeffall = effSigma(hsig);
+  // double sigmaeffw = effSigma(hwsig);
+  // double iqr = 2.0*effSigma(hsig,0.5);
  
-  double optbinwidth = 1.; 
+  // double optbinwidth = 1.; 
   
   //vector(icat, ibin, itoy)
   std::cout << "[INFO] beginning systematics " << std::endl; 
@@ -525,7 +525,7 @@ int main(int argc, char *argv[]) {
     errquants[icat].resize(nbins);
   }
   
-  TH1 *hwdata = wdata->createHistogram("hwdata",*mass,Binning(nbins,lowedge,highedge));
+  // TH1 *hwdata = wdata->createHistogram("hwdata",*mass,Binning(nbins,lowedge,highedge));
   TH1D *hsubdata = new TH1D("hsubdata","",nbins,lowedge,highedge);
   
   double curvescale = hsubdata->GetXaxis()->GetBinWidth(1)/hwsig->GetXaxis()->GetBinWidth(1);
@@ -540,18 +540,18 @@ int main(int argc, char *argv[]) {
   hbkgplotfine->Scale(curvescaleplotfine);
   hwbkgplotfine->Scale(curvescaleplotfine);
   
-  for (int isig=0; isig<hsigplotsfine.size(); ++isig) {
+  for (unsigned int isig=0; isig<hsigplotsfine.size(); ++isig) {
     hsigplotsfine[isig]->Scale(curvescale);
   }
   
-  TGraphAsymmErrors *errgraph = new TGraphAsymmErrors;
-  TGraphAsymmErrors *errgraph2 = new TGraphAsymmErrors;
+  // TGraphAsymmErrors *errgraph = new TGraphAsymmErrors;
+  // TGraphAsymmErrors *errgraph2 = new TGraphAsymmErrors;
 
-  TGraphAsymmErrors *errgraphsub = new TGraphAsymmErrors;
-  TGraphAsymmErrors *errgraphsub2 = new TGraphAsymmErrors;  
+  // TGraphAsymmErrors *errgraphsub = new TGraphAsymmErrors;
+  // TGraphAsymmErrors *errgraphsub2 = new TGraphAsymmErrors;  
   
-  TGraphAsymmErrors *errgraphcomb = new TGraphAsymmErrors;
-  TGraphAsymmErrors *errgraphcomb2 = new TGraphAsymmErrors;  
+  // TGraphAsymmErrors *errgraphcomb = new TGraphAsymmErrors;
+  // TGraphAsymmErrors *errgraphcomb2 = new TGraphAsymmErrors;  
   
   std::vector<TGraphAsymmErrors*> onesigmas;
   std::vector<TGraphAsymmErrors*> twosigmas;
@@ -642,7 +642,7 @@ int main(int argc, char *argv[]) {
     //std::cout << "errquants[ncats][ibin] size " << errquants[ncats][ibin].size() << " vs ntous " << ntoys << std::endl;
       std::vector<double> &entries = errquants[icat][ibin];
       std::sort(entries.begin(),entries.end());
-      for (int ientry =0 ; ientry < entries.size() ; ientry++){
+      for (unsigned int ientry =0 ; ientry < entries.size() ; ientry++){
      // std::cout << "entry " << ientry << " value " << entries[ientry] << std::endl;
      // if (ientry == int(quantmed*entries.size())) std::cout << "** ^ median ^ ** "<< std::endl;  
      // if (ientry == int(quantminusone*entries.size())) std::cout << "** ^ -1 sig ^ ** "<< std::endl;  
@@ -678,9 +678,9 @@ int main(int argc, char *argv[]) {
   
   std::cout << "[INFO] done calculating uncertainties" << std::endl;
   std::cout << "[INFO] time to plot stuff..." << std::endl;
-  RooPlot *plot = mass->frame(lowedge,highedge,nbins); 
+  // RooPlot *plot = mass->frame(lowedge,highedge,nbins); 
   
-  TH1D *hdummyunweight = new TH1D("hdummyunweight","",nbins,lowedge,highedge);
+  // TH1D *hdummyunweight = new TH1D("hdummyunweight","",nbins,lowedge,highedge);
   
   TH1F *hdummy = new TH1F("hdummy","",nbins,lowedge,highedge);
   
@@ -719,7 +719,7 @@ int main(int argc, char *argv[]) {
   hwbkgplotfine->SetLineColor(kRed);
   hwbkgplotfine->SetLineStyle(kDashed);  
   
-  for (int isig=0; isig<hsigplotsfine.size(); ++isig) {
+  for (unsigned int isig=0; isig<hsigplotsfine.size(); ++isig) {
     hsigplotsfine[isig]->SetLineColor(kRed);
     hsigplotsfine[isig]->SetLineWidth(deflinewidth);
   }  
@@ -731,7 +731,7 @@ int main(int argc, char *argv[]) {
   hdummy->GetYaxis()->SetLabelSize(2.0*hdummy->GetYaxis()->GetLabelSize());
   
   for (int i=0; i<(chan->numTypes()+2); ++i) {
-    bool iscombcat = !(i<chan->numTypes());
+    // bool iscombcat = !(i<chan->numTypes());
     
     if (i<ncats) chan->setIndex(i);
     
@@ -750,11 +750,11 @@ int main(int argc, char *argv[]) {
     }
     else if (i==ncats) {
       catdatam = data;
-      printf("[INFO] catdata -- Unweighted data --  entries = %5f\n",i,catdatam->sumEntries());
+      printf("[INFO] catdata -- Unweighted data --  entries = %5f\n",catdatam->sumEntries());
     }
     else if (i==(ncats+1)) {
       catdatam = wdata;
-      printf("[INFO] catdata -- Weighted data --  entries = %5f\n",i,catdatam->sumEntries());
+      printf("[INFO] catdata -- Weighted data --  entries = %5f\n",catdatam->sumEntries());
     }
     
    std::cout << "[INFO] make canvas " << std::endl; 
@@ -824,7 +824,7 @@ int main(int argc, char *argv[]) {
     if (catplot->GetXaxis()->GetBinWidth(1) !=1){
       if (i==(ncats+1)) catplot->GetYaxis()->SetTitle(TString::Format("S/(S+B) Weighted Events / %.3g GeV",catplot->GetXaxis()->GetBinWidth(1)));
     } else {
-      if (i==(ncats+1)) catplot->GetYaxis()->SetTitle(TString::Format("S/(S+B) Weighted Events / GeV",catplot->GetXaxis()->GetBinWidth(1)));
+      if (i==(ncats+1)) catplot->GetYaxis()->SetTitle( TString::Format("S/(S+B) Weighted Events / GeV") );
     }
     
     float offset =-999;
@@ -955,7 +955,7 @@ int main(int argc, char *argv[]) {
     ccat->SaveAs(prefix+catnames[i]+".root");
   } 
   
-  for (int icat=0; icat<catweights.size(); ++icat) {
+  for (unsigned int icat=0; icat<catweights.size(); ++icat) {
     printf("%i: weight = %5f\n",icat,weightscale*catweights.at(icat));
   }
 
