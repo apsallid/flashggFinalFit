@@ -14,7 +14,7 @@ int Normalization_8TeV::Init(int sqrtS){
    // std::string globeRt = ( env != 0 ? env : env + "src/flashggFinalFits/Signal")
 	 std::string globeRt = env;
 	 if (globeRt !=0){
-	 globeRt = globeRt+"/src/flashggFinalFit/Signal";
+	 globeRt = globeRt+"/src/HiggsAnalysis/flashggFinalFit/Signal";
 	 }
 	// std::cout << " Form " << Form("buildSMHiggsSignalXSBR = imp.load_source('*', '%s/python/buildSMHiggsSignalXSBR.py')",globeRt.c_str()) << std::endl;
     if( ! TPython::Exec(Form("buildSMHiggsSignalXSBR = imp.load_source('*', '%s/python/buildSMHiggsSignalXSBR.py')",globeRt.c_str())) ) {
@@ -25,12 +25,19 @@ int Normalization_8TeV::Init(int sqrtS){
     
     for (double mH=120;mH<=135.0;mH+=0.1){ // Do we need this up to 250 ?
 	double valBR    =  (double)TPython::Eval(Form("buildSMHiggsSignalXSBR.getBR(%f)",mH));
+	std::cout << "111111111111111111111111111" << std::endl;
 	double valXSggH =  (double)TPython::Eval(Form("buildSMHiggsSignalXSBR.getXS(%f,'%s')",mH,"ggH"));
+	std::cout << "222222222222222222222222222222222222222" << std::endl;
 	double valXSqqH =  (double)TPython::Eval(Form("buildSMHiggsSignalXSBR.getXS(%f,'%s')",mH,"qqH"));
+	std::cout << "33333333333333333333333333333333333" << std::endl;
 	double valXSttH =  (double)TPython::Eval(Form("buildSMHiggsSignalXSBR.getXS(%f,'%s')",mH,"ttH"));
+	std::cout << "44444444444444444444444444444444444" << std::endl;
 	double valXSWH  =  (double)TPython::Eval(Form("buildSMHiggsSignalXSBR.getXS(%f,'%s')",mH,"WH"));
+	std::cout << "5555555555555555555555555555555555" << std::endl;
 	double valXSZH  =  (double)TPython::Eval(Form("buildSMHiggsSignalXSBR.getXS(%f,'%s')",mH,"ZH"));
-	double valXSbbH  =  (double)TPython::Eval(Form("buildSMHiggsSignalXSBR.getXS(%f,'%s')",mH,"bbH"));
+	std::cout << "6666666666666666666666666666666666666" << std::endl;
+	//	double valXSbbH  =  (double)TPython::Eval(Form("buildSMHiggsSignalXSBR.getXS(%f,'%s')",mH,"bbH"));
+	std::cout << "7777777777777777777777777777777777777777" << std::endl;
 	BranchingRatioMap[mH]	= valBR;
         XSectionMap_ggh[mH]	= valXSggH; 	
         XSectionMap_vbf[mH]	= valXSqqH; 	
@@ -45,7 +52,7 @@ int Normalization_8TeV::Init(int sqrtS){
         XSectionMap_WH2HQQ[mH]	= valXSWH*(67.41*0.01)/*BR(W to hadrons)*/;
         XSectionMap_ZH2HQQ[mH]	= valXSZH*(69.91*0.01)/*BR(Z to hadrons)*/;	
 
-        XSectionMap_testBBH[mH]	= valXSbbH;
+        // XSectionMap_testBBH[mH]	= valXSbbH;
         XSectionMap_testTHQ[mH]	= 0.074;
         XSectionMap_testTHW[mH]	= 0.015;
 	
@@ -178,8 +185,8 @@ TGraph * Normalization_8TeV::GetSigmaGraph(TString process)
 		XSectionMap = &XSectionMap_WH2HQQ;
 	} else if ( process.Contains("ZH2HQQ") ) {
 		XSectionMap = &XSectionMap_ZH2HQQ;
-	} else if ( process.Contains("testBBH") ) {
-		XSectionMap = &XSectionMap_testBBH;
+	// } else if ( process.Contains("testBBH") ) {
+	// 	XSectionMap = &XSectionMap_testBBH;
 	} else if ( process.Contains("testTHQ") ) {
 		XSectionMap = &XSectionMap_testTHQ;
 	} else if ( process.Contains("testTHW") ) {
@@ -260,8 +267,8 @@ double Normalization_8TeV::GetXsection(double mass, TString HistName) {
 		XSectionMap = &XSectionMap_WH2HQQ;
 	} else if (HistName.Contains("ZH2HQQ")) {
 		XSectionMap = &XSectionMap_ZH2HQQ;
-	} else if (HistName.Contains("testBBH")) {
-		XSectionMap = &XSectionMap_testBBH;
+	// } else if (HistName.Contains("testBBH")) {
+	// 	XSectionMap = &XSectionMap_testBBH;
 	} else if (HistName.Contains("testTHQ")) {
 		XSectionMap = &XSectionMap_testTHQ;
 	} else if (HistName.Contains("testTHW")) {

@@ -441,7 +441,9 @@ void Plot(RooRealVar *mass, RooDataSet *data, RooAbsPdf *pdf, pair<double,double
   double binwidth=fwhmRange[3];
   vector<double> negWeightBins;
   vector<double> negWeightBinsValues;
+  std::cout << "1111111111111111111111111111111111111111111" << std::endl;
   RooPlot *plot = mass->frame(Bins(binning_),Range("higgsRange"));
+  std::cout << "222222222222222222222222222222222222222" << std::endl;
   RooPlot *plotchi2 = mass->frame(Bins(binning_),Range("higgsRange"));
   plot->SetMinimum(0.0);
   plotchi2->SetMinimum(0.0);
@@ -458,9 +460,12 @@ void Plot(RooRealVar *mass, RooDataSet *data, RooAbsPdf *pdf, pair<double,double
     }
   }
   double offset =0.05;
+  std::cout << "3333333333333333333333333333333333333" << std::endl;
   if (data) data->plotOn(plot,Invisible());
   if (data) data->plotOn(plotchi2,Invisible());
+  std::cout << "44444444444444444444444444444444444444444" << std::endl;
   std::cout << " LC DEBIG A : data content: " << data->sumEntries() << std::endl;
+  std::cout << "555555555555555555555555555555555555555" << std::endl;
   data->Print();
 
   pdf->plotOn(plot,NormRange("higgsRange"),Range(semin,semax),FillColor(19),DrawOption("F"),LineWidth(2),FillStyle(1001),VLines(),LineColor(15));

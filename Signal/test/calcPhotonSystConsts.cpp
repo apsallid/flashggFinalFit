@@ -57,7 +57,11 @@ vector<string> globalScalesCorr_;
 string procStr_;
 vector<string> procs_;
 string flashggCatsStr_;
+string flashggCatsStrIn_;
+string cutforBDTStr_;				
 vector<string> flashggCats_;
+vector<string> cutforBDT_;
+vector<string> flashggCatsIn_;
 string plotDir_;
 bool doPlots_;
 int mh_;
@@ -85,6 +89,8 @@ void OptionParser(int argc, char *argv[]){
 		("quadInterpolate",	po::value<int>(&quadInterpolate_)->default_value(0),														"Do a quadratic interpolation from this amount of sigma")
 		("isFlashgg",	po::value<bool>(&isFlashgg_)->default_value(true),														"Use flashgg format")
 		("flashggCats,f", po::value<string>(&flashggCatsStr_)->default_value("UntaggedTag_0,UntaggedTag_1,UntaggedTag_2,UntaggedTag_3,UntaggedTag_4,VBFTag_0,VBFTag_1,VBFTag_2,TTHHadronicTag,TTHLeptonicTag,VHHadronicTag,VHTightTag,VHLooseTag,VHEtTag"),       "Flashgg category names") 
+		("flashggCatsIn", po::value<string>(&flashggCatsStrIn_)->default_value("UntaggedTag_0,UntaggedTag_1,UntaggedTag_2,UntaggedTag_3,UntaggedTag_4,VBFTag_0,VBFTag_1,VBFTag_2,TTHHadronicTag,TTHLeptonicTag,VHHadronicTag,VHTightTag,VHLooseTag,VHEtTag"),       "Flashgg category names to consider")
+		("cutforBDT", po::value<string>(&cutforBDTStr_)->default_value("0.2,0.4,0.6,0.8,1.0"),       "The dijet_mva cut to specific bins cut")
 		("verbosity,v", po::value<int>(&verbosity_)->default_value(0),                                  								"How much info to write (0 none, 1 some)")
 		;                                   
 
@@ -115,6 +121,8 @@ void OptionParser(int argc, char *argv[]){
 	split(infilenames_,infilenamesStr_,boost::is_any_of(","));
 	split(procs_,procStr_,boost::is_any_of(","));
 	split(flashggCats_,flashggCatsStr_,boost::is_any_of(","));
+	split(flashggCatsIn_,flashggCatsStrIn_,boost::is_any_of(","));
+	split(cutforBDT_,cutforBDTStr_,boost::is_any_of(","));
 	split(photonCatScales_,photonCatScalesStr_,boost::is_any_of(","));
 	split(photonCatScalesCorr_,photonCatScalesCorrStr_,boost::is_any_of(","));
 	split(photonCatSmears_,photonCatSmearsStr_,boost::is_any_of(","));
@@ -336,23 +344,82 @@ double getRateVar(TH1F* nom, TH1F *up, TH1F* down){
 	return val;
 }
 
-vector<TH1F*> getHistograms(vector<TFile*> files, string name, string syst){
+RooDataSet * reduceDataset(RooDataSet *data0, string catname, string catlow, string cathigh){
+
+  // string thename = data0->GetName() + catname;
+  string thename = catname;
+
+  RooDataSet *datasetReduced = (RooDataSet*) data0->emptyClone( thename.c_str(), thename.c_str());
+  std::cout << data0->GetName()  << std::endl;
+  std::cout << datasetReduced->GetName()  << std::endl;
+
+  //RooDataSet *data = (RooDataSet*) data0->emptyClone()->reduce(RooArgSet(*mass_, *dijet_mva_));
+
+  for (int i=0 ; i < data0->numEntries() ; i++){
+      float dm = data0->get(i)->getRealValue("dijet_mva");
+    
+      if ( dm < std::stof(cathigh) && dm >= std::stof(catlow) ){
+ 	// std::cout << "weight" << data0->weight() << endl;
+	datasetReduced->add(*(data0->get(i)), data0->weight());
+
+      //data->add( RooArgList(*mass_,  *dijet_mva_), 1.0 );
+    }
+  }
+  return datasetReduced;
+}
+
+RooDataHist * reduceDatahist(RooDataHist *data0, string catname, string catlow, string cathigh){
+
+  //string thename = data0->GetName() + catname;
+  string thename = catname;
+
+  RooDataHist *datahistReduced = (RooDataHist*) data0->emptyClone( thename.c_str(), thename.c_str());
+  std::cout << data0->GetName()  << std::endl;
+
+  //RooDataHist *data = (RooDataHist*) data0->emptyClone()->reduce(RooArgHist(*mass_, *dijet_mva_));
+
+  for (int i=0 ; i < data0->numEntries() ; i++){
+      float dm = data0->get(i)->getRealValue("dijet_mva");
+    
+      if ( dm < std::stof(cathigh) && dm >= std::stof(catlow) ){
+      datahistReduced->add(*(data0->get(i)), data0->weight() );
+
+      //data->add( RooArgList(*mass_,  *dijet_mva_), 1.0 );
+    }
+  }
+  return datahistReduced;
+}
+
+vector<TH1F*> getHistograms(vector<TFile*> files, string name, string nameout, string syst, string catlow, string cathigh){
 
 	vector<TH1F*> ret_hists;
 	for (unsigned int i=0; i<files.size(); i++){
 		files[i]->cd();
 		if (isFlashgg_){
-			TH1F *up =  new TH1F(Form("%s_%sUp01sigma",name.c_str(),syst.c_str()),Form("%s_%sUp01sigma",name.c_str(),syst.c_str()),80,100,180);
-			TH1F *down = new TH1F(Form("%s_%sDown01sigma",name.c_str(),syst.c_str()),Form("%s_%sDown01sigma",name.c_str(),syst.c_str()),80,100,180);
-			TH1F *nominal = new TH1F((Form("%s_%s",name.c_str(),syst.c_str())),(Form("%s%s",name.c_str(),syst.c_str())),80,100,180);
-			RooDataSet *rds_up = (RooDataSet*) inWS_->data((Form("%s_%sUp01sigma",name.c_str(),syst.c_str())));
-			RooDataSet *rds_down = (RooDataSet*) inWS_->data((Form("%s_%sDown01sigma",name.c_str(),syst.c_str())));
-			RooDataSet *rds_nom = (RooDataSet*) inWS_->data((Form("%s",name.c_str())));
-				
-			RooDataHist *rds_up_h = (RooDataHist*) inWS_->data((Form("%s_%sUp01sigma",name.c_str(),syst.c_str())));
-			RooDataHist *rds_down_h = (RooDataHist*) inWS_->data((Form("%s_%sDown01sigma",name.c_str(),syst.c_str())));
+			TH1F *up =  new TH1F(Form("%s_%sUp01sigma",nameout.c_str(),syst.c_str()),Form("%s_%sUp01sigma",nameout.c_str(),syst.c_str()),80,100,180);
+			TH1F *down = new TH1F(Form("%s_%sDown01sigma",nameout.c_str(),syst.c_str()),Form("%s_%sDown01sigma",nameout.c_str(),syst.c_str()),80,100,180);
+			TH1F *nominal = new TH1F((Form("%s_%s",nameout.c_str(),syst.c_str())),(Form("%s%s",nameout.c_str(),syst.c_str())),80,100,180);
+			RooDataSet *rds_up0 = (RooDataSet*) inWS_->data((Form("%s_%sUp01sigma",name.c_str(),syst.c_str())));
+			RooDataSet *rds_down0 = (RooDataSet*) inWS_->data((Form("%s_%sDown01sigma",name.c_str(),syst.c_str())));
+			RooDataSet *rds_nom0 = (RooDataSet*) inWS_->data((Form("%s",name.c_str())));
+			
+			std::cout << "11111111111111111111111111111111"<< std::endl;
+			RooDataSet *rds_up =  reduceDataset(rds_up0, Form("%s_%sUp01sigma",nameout.c_str(),syst.c_str())  , catlow, cathigh );  
+			RooDataSet *rds_down =  reduceDataset(rds_down0, Form("%s_%sDown01sigma",nameout.c_str(),syst.c_str())  , catlow, cathigh );  
+			RooDataSet *rds_nom =  reduceDataset(rds_nom0, Form("%s_%s",nameout.c_str(),syst.c_str()) , catlow, cathigh );  
+			std::cout << "2222222222222222222"<< std::endl;
+
+			RooDataHist *rds_up_h0 = (RooDataHist*) inWS_->data((Form("%s_%sUp01sigma",name.c_str(),syst.c_str())));
+			RooDataHist *rds_down_h0 = (RooDataHist*) inWS_->data((Form("%s_%sDown01sigma",name.c_str(),syst.c_str())));
+			std::cout << "33333333333333333333333333"<< std::endl;
+
+			RooDataHist *rds_up_h = reduceDatahist( rds_up_h0, Form("%s_%sUp01sigma",nameout.c_str(),syst.c_str())  , catlow, cathigh  );
+			RooDataHist *rds_down_h = reduceDatahist( rds_down_h0, Form("%s_%sDown01sigma",nameout.c_str(),syst.c_str())  , catlow, cathigh  );
+			std::cout << "4444444444444444444444444444444"<< std::endl;
+
 
 			if(rds_up){
+			  std::cout << "555555555555555555555555555"<< std::endl;
 				rds_up->fillHistogram(up,RooArgList(*mass_));
 			} else {
 				rds_up_h->fillHistogram(up,RooArgList(*mass_));
@@ -489,13 +556,17 @@ int main(int argc, char *argv[]){
 					vector<TH1F*> hists;
 					if (isFlashgg_){
 						string flashggCat = flashggCats_[cat]; 
-						hists= getHistograms(inFiles,Form("%s_%d_13TeV_%s",proc->c_str(),mh_,flashggCat.c_str()),Form("MCScale%s",phoCat->c_str()));
+						string flashggCatIn = flashggCatsIn_[cat]; 
+						hists= getHistograms(inFiles,Form("%s_%d_13TeV_%s",proc->c_str(),mh_,flashggCatIn.c_str()),Form("%s_%d_13TeV_%s",proc->c_str(),mh_,flashggCat.c_str()),Form("MCScale%s",phoCat->c_str()), cutforBDT_[cat], cutforBDT_[cat+1]);
 					}else{
-						hists= getHistograms(inFiles,Form("th1f_sig_%s_mass_m%d_cat%d",proc->c_str(),mh_,cat),Form("E_scale_%s",phoCat->c_str()));
+						hists= getHistograms(inFiles,Form("th1f_sig_%s_mass_m%d_cat%d",proc->c_str(),mh_,cat),Form("th1f_sig_%s_mass_m%d_cat%d",proc->c_str(),mh_,cat),Form("E_scale_%s",phoCat->c_str()), cutforBDT_[cat], cutforBDT_[cat+1]);
 					}
 					TH1F *nominal = hists[0];
+					std::cout << nominal->GetName() << std::endl;
 					TH1F *scaleUp = hists[1];
 					TH1F *scaleDown = hists[2];
+					std::cout << scaleUp->GetName() << " " <<scaleUp->Integral() << std::endl;
+					std::cout << scaleDown->GetName()  << " " <<scaleDown->Integral() << std::endl;
 
 					outfile << Form("%-30s",(*phoCat+"_"+sqrtS_+"TeVscale").c_str());
 					if( scaleUp != 0 && scaleDown != 0 && nominal != 0) {
@@ -529,11 +600,12 @@ int main(int argc, char *argv[]){
 					vector<TH1F*> hists;
 					if (isFlashgg_){ // Smearing not yet supported for Flashgg
 						string flashggCat = flashggCats_[cat]; 
-						hists= getHistograms(inFiles,Form("%s_%d_13TeV_%s",proc->c_str(),mh_,flashggCat.c_str()),Form("MCSmear%s",phoCat->c_str()));
+						string flashggCatIn = flashggCatsIn_[cat]; 
+						hists= getHistograms(inFiles,Form("%s_%d_13TeV_%s",proc->c_str(),mh_,flashggCatIn.c_str()),Form("%s_%d_13TeV_%s",proc->c_str(),mh_,flashggCat.c_str()),Form("MCSmear%s",phoCat->c_str()), cutforBDT_[cat], cutforBDT_[cat+1]);
 					}	 else {
 
 						// this is to ensure nominal comes from the right file
-						hists = getHistograms(inFiles,Form("th1f_sig_%s_mass_m%d_cat%d",proc->c_str(),mh_,cat),Form("E_res_%s",phoCat->c_str()));
+						hists = getHistograms(inFiles,Form("th1f_sig_%s_mass_m%d_cat%d",proc->c_str(),mh_,cat),Form("th1f_sig_%s_mass_m%d_cat%d",proc->c_str(),mh_,cat),Form("E_res_%s",phoCat->c_str()), cutforBDT_[cat], cutforBDT_[cat+1]);
 					}
 					TH1F *nominal = hists[0];
 					TH1F *smearUp = hists[1];
@@ -570,7 +642,8 @@ int main(int argc, char *argv[]){
 				if (photonCatScalesCorrStr_.size()!=0){
 					for (vector<string>::iterator phoCat=photonCatScalesCorr_.begin(); phoCat!=photonCatScalesCorr_.end(); phoCat++){
 						string flashggCat = flashggCats_[cat]; 
-						vector<TH1F*> hists= getHistograms(inFiles,Form("%s_%d_13TeV_%s",proc->c_str(),mh_,flashggCat.c_str()),Form("%s",phoCat->c_str()));
+						string flashggCatIn = flashggCatsIn_[cat]; 
+						vector<TH1F*> hists= getHistograms(inFiles,Form("%s_%d_13TeV_%s",proc->c_str(),mh_,flashggCatIn.c_str()),Form("%s_%d_13TeV_%s",proc->c_str(),mh_,flashggCat.c_str()),Form("%s",phoCat->c_str()), cutforBDT_[cat], cutforBDT_[cat+1]);
 
 						// this is to ensure nominal comes from the right file
 						TH1F *nominal = hists[0];
@@ -609,7 +682,7 @@ int main(int argc, char *argv[]){
 					for (vector<string>::iterator phoCat=photonCatSmearsCorr_.begin(); phoCat!=photonCatSmearsCorr_.end(); phoCat++){
 
 						// this is to ensure nominal comes from the right file
-						vector<TH1F*> hists = getHistograms(inFiles,Form("th1f_sig_%s_mass_m%d_cat%d",proc->c_str(),mh_,cat),Form("E_res_%s",phoCat->c_str()));
+						vector<TH1F*> hists = getHistograms(inFiles,Form("th1f_sig_%s_mass_m%d_cat%d",proc->c_str(),mh_,cat),Form("th1f_sig_%s_mass_m%d_cat%d",proc->c_str(),mh_,cat),Form("E_res_%s",phoCat->c_str()), cutforBDT_[cat], cutforBDT_[cat+1]);
 						TH1F *nominal = hists[0];
 						TH1F *smearUp = hists[1];
 						TH1F *smearDown = hists[2];

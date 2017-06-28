@@ -90,7 +90,11 @@ bool isFlashgg_;
 bool binnedFit_;
 int  nBins_;
 string flashggCatsStr_;
+string flashggCatsStrIn_;
+string cutforBDTStr_;				
 vector<string> flashggCats_;
+vector<string> cutforBDT_;
+vector<string> flashggCatsIn_;
 bool checkYields_;
 bool useMerged_;
 vector<string>  split_;
@@ -101,13 +105,17 @@ float mcBeamSpotWidth_=5.14; //cm // the beamspot has a certain width in MC whic
 //float dataBeamSpotWidth_=4.24; //cm
 float dataBeamSpotWidth_=3.5; //cm
 //string referenceProc_="ggh";
-string referenceProc_="GG2H";
+//string referenceProc_="GG2H";
+string referenceProc_="vbf";
 //string referenceProcWV_="ggh";
-string referenceProcWV_="GG2H";
+//string referenceProcWV_="GG2H";
+string referenceProcWV_="vbf";
 //string referenceProcTTH_="tth";
 string referenceProcTTH_="TTH";
-string referenceTagWV_="UntaggedTag_2";
-string referenceTagRV_="UntaggedTag_2";
+// string referenceTagWV_="UntaggedTag_2";
+// string referenceTagRV_="UntaggedTag_2";
+string referenceTagWV_="VBFTag_3";
+string referenceTagRV_="VBFTag_3";
 vector<string> map_proc_;
 vector<string> map_cat_;
 vector<string> map_replacement_proc_RV_;
@@ -160,6 +168,8 @@ void OptionParser(int argc, char *argv[]){
       ("split", po::value<string>(&splitStr_)->default_value(""), "do just one tag,proc ")
 		("changeIntLumi",	po::value<float>(&newIntLumi_)->default_value(0),														"If you want to specify an intLumi other than the one in the file. The event weights and rooRealVar IntLumi are both changed accordingly. (Specify new intlumi in fb^{-1})")
 		("flashggCats,f", po::value<string>(&flashggCatsStr_)->default_value("UntaggedTag_0,UntaggedTag_1,UntaggedTag_2,UntaggedTag_3,UntaggedTag_4,VBFTag_0,VBFTag_1,VBFTag_2,TTHHadronicTag,TTHLeptonicTag,VHHadronicTag,VHTightTag,VHLooseTag,VHEtTag"),       "Flashgg categories if used")
+		("flashggCatsIn", po::value<string>(&flashggCatsStrIn_)->default_value("UntaggedTag_0,UntaggedTag_1,UntaggedTag_2,UntaggedTag_3,UntaggedTag_4,VBFTag_0,VBFTag_1,VBFTag_2,TTHHadronicTag,TTHLeptonicTag,VHHadronicTag,VHTightTag,VHLooseTag,VHEtTag"),       "Flashgg category names to consider")
+		("cutforBDT", po::value<string>(&cutforBDTStr_)->default_value("0.2,0.4,0.6,0.8,1.0"),       "The dijet_mva cut to specific bins cut")
 		;                                                                                             		
 	po::options_description desc("Allowed options");
 	desc.add(desc1);
@@ -216,6 +226,8 @@ void OptionParser(int argc, char *argv[]){
   split(procs_,procStr_,boost::is_any_of(","));
 	split(flashggCats_,flashggCatsStr_,boost::is_any_of(","));
 	split(filename_,filenameStr_,boost::is_any_of(","));
+	split(flashggCatsIn_,flashggCatsStrIn_,boost::is_any_of(","));
+	split(cutforBDT_,cutforBDTStr_,boost::is_any_of(","));
   split(split_,splitStr_,boost::is_any_of(",")); // proc,cat
 
 }
@@ -288,17 +300,40 @@ void makeCloneConfig(clonemap_t mapRV, clonemap_t mapWV, string newdatfilename){
 
 }
 
-RooDataSet * reduceDataset(RooDataSet *data0){
+// RooDataSet * reduceDataset(RooDataSet *data0){
 
-  RooDataSet *data = (RooDataSet*) data0->emptyClone()->reduce(RooArgSet(*mass_, *dZ_));
-	RooRealVar *weight0 = new RooRealVar("weight","weight",-100000,1000000);
-  for (unsigned int i=0 ; i < data0->numEntries() ; i++){
-    mass_->setVal(data0->get(i)->getRealValue("CMS_hgg_mass"));
-    weight0->setVal(data0->weight() ); // <--- is this correct?
-    dZ_->setVal(data0->get(i)->getRealValue("dZ"));
-    data->add( RooArgList(*mass_, *dZ_, *weight0), weight0->getVal() );
+//   RooDataSet *data = (RooDataSet*) data0->emptyClone()->reduce(RooArgSet(*mass_, *dZ_));
+// 	RooRealVar *weight0 = new RooRealVar("weight","weight",-100000,1000000);
+//   for (unsigned int i=0 ; i < data0->numEntries() ; i++){
+//     mass_->setVal(data0->get(i)->getRealValue("CMS_hgg_mass"));
+//     weight0->setVal(data0->weight() ); // <--- is this correct?
+//     dZ_->setVal(data0->get(i)->getRealValue("dZ"));
+//     data->add( RooArgList(*mass_, *dZ_, *weight0), weight0->getVal() );
+//     }
+// return data;
+// }
+
+RooDataSet * reduceDataset(RooDataSet *data0, string catname, string catlow, string cathigh){
+
+  string thename = catname;
+
+  RooDataSet *data = (RooDataSet*) data0->emptyClone( thename.c_str(), thename.c_str() )->reduce(RooArgSet(*mass_, *dZ_));
+  std::cout << data0->GetName()  << std::endl;
+  std::cout << data->GetName()  << std::endl;
+  RooRealVar *weight0 = new RooRealVar("weight","weight",-100000,1000000);
+  for (int i=0 ; i < data0->numEntries() ; i++){
+
+    float dm = data0->get(i)->getRealValue("dijet_mva");
+
+    if ( dm < std::stof(cathigh) && dm >= std::stof(catlow) ){
+      mass_->setVal(data0->get(i)->getRealValue("CMS_hgg_mass"));
+      weight0->setVal(data0->weight() ); // <--- is this correct?
+      dZ_->setVal(data0->get(i)->getRealValue("dZ"));
+      data->add( RooArgList(*mass_, *dZ_, *weight0), weight0->getVal() );
     }
-return data;
+
+  }
+  return data;
 }
 
 // this is where we reweight the DZ distribution as a proxy for the beamspot.
@@ -308,7 +343,7 @@ void plotBeamSpotDZdist(RooDataSet *data0, string suffix=""){
 	TH1F *histSmallDZ = new TH1F ("h1sdz","h1sdz",20,-0.1,0.1);
 	TH1F *histLargeDZ = new TH1F ("h1ldz","h1ldz",20,-25,25);
 
-  for (unsigned int i=0 ; i < data0->numEntries() ; i++){
+  for (int i=0 ; i < data0->numEntries() ; i++){
     mass_->setVal(data0->get(i)->getRealValue("CMS_hgg_mass"));
     weight0->setVal(data0->weight() ); // <--- is this correct?
     dZ_->setVal(data0->get(i)->getRealValue("dZ"));
@@ -348,7 +383,7 @@ RooDataSet * rvwvDataset(RooDataSet *data0, string rvwv){
   RooDataSet *dataRV = (RooDataSet*) data0->emptyClone()->reduce(RooArgSet(*mass_, *dZ_));
   RooDataSet *dataWV = (RooDataSet*) data0->emptyClone()->reduce(RooArgSet(*mass_, *dZ_));
 	RooRealVar *weight0 = new RooRealVar("weight","weight",-100000,1000000);
-  for (unsigned int i=0 ; i < data0->numEntries() ; i++){
+  for (int i=0 ; i < data0->numEntries() ; i++){
     mass_->setVal(data0->get(i)->getRealValue("CMS_hgg_mass"));
     weight0->setVal(data0->weight() ); 
 		dZ_->setVal(data0->get(i)->getRealValue("dZ"));
@@ -443,12 +478,15 @@ int main(int argc, char *argv[]){
   // reference details for low stats cats
   // need to make this configurable ?! -LC
   //referenceProc_="ggh";
-  referenceProc_="GG2H";
+  // referenceProc_="GG2H";
+  referenceProc_="vbf";
   //referenceProcTTH_="tth";
   referenceProcTTH_="TTH";
-  referenceTagWV_="UntaggedTag_2"; // histest stats WV is ggh Untagged 3. 
-  referenceTagRV_="UntaggedTag_2"; // fairly low resolution tag even for ggh, more approprioate as te default than re-using the original tag.
-  // are WV which needs to borrow should be taken from here
+  // referenceTagWV_="UntaggedTag_2"; // histest stats WV is ggh Untagged 3. 
+  // referenceTagRV_="UntaggedTag_2"; // fairly low resolution tag even for ggh, more approprioate as te default than re-using the original tag.
+  referenceTagWV_="VBFTag_3"; // histest stats WV is ggh Untagged 3. 
+  referenceTagRV_="VBFTag_3"; // fairly low resolution tag even for ggh, more approprioate as te default than re-using the original tag.
+ // are WV which needs to borrow should be taken from here
   
   // isFlashgg should now be the only option.
 	if (isFlashgg_){ 
@@ -724,7 +762,14 @@ int main(int argc, char *argv[]){
       RooDataHist *dataH;  
 
         if (verbose_)std::cout << "[INFO] Opening dataset called "<< Form("%s_%d_13TeV_%s",proc.c_str(),mh,cat.c_str()) << " in in WS " << inWS << std::endl;
-        RooDataSet *data0   = reduceDataset((RooDataSet*)inWS->data(Form("%s_%d_13TeV_%s",proc.c_str(),mh,cat.c_str())));
+        //RooDataSet *data0   = reduceDataset((RooDataSet*)inWS->data(Form("%s_%d_13TeV_%s",proc.c_str(),mh,cat.c_str())));
+	
+	std::size_t foundcat = cat.find_last_of('_');
+	int catnum = stoi( cat.substr(foundcat+1) );
+
+	RooDataSet *dataFullin   = (RooDataSet*)inWS->data(Form("%s_%d_13TeV_%s",proc.c_str(),mh,flashggCatsIn_[catnum].c_str()));
+
+	RooDataSet *data0 =  reduceDataset(dataFullin, Form("%s_%d_13TeV_%s",proc.c_str(),mh,cat.c_str()) , cutforBDT_[catnum], cutforBDT_[catnum+1]);  
 				//if (beamSpotReweigh_){
                                 if (beamSpotReweigh_ && !(TString(proc).Contains("tth") && mh==125)){
         data = beamSpotReweigh(intLumiReweigh(data0));
@@ -767,14 +812,20 @@ int main(int argc, char *argv[]){
           
           //pick the dataset for the replacement proc and cat, reduce it (ie remove pdfWeights etc) ,
           //reweight for lumi, and then get the RV events only.
+
+	  std::size_t foundrepcat = replancementCat.find_last_of('_');
+	  int repcatnum = stoi( replancementCat.substr(foundrepcat+1) );
+
 					//if(beamSpotReweigh_){
                                         if (beamSpotReweigh_ && !(TString(replancementProc).Contains("tth") && mh==125)){
           data0Ref   = beamSpotReweigh(
 													rvwvDataset(
                         		intLumiReweigh(
-                          		reduceDataset(
-                          			(RooDataSet*)inWS->data(Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str()))
-                              )
+                          		// reduceDataset(
+                          		// 	(RooDataSet*)inWS->data(Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str()))
+					// 	      )
+					reduceDataset( (RooDataSet*)inWS->data(Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,flashggCatsIn_[repcatnum].c_str())), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str()) , cutforBDT_[repcatnum], cutforBDT_[repcatnum+1] )  
+	
                             ), "RV"
                           )
 											 );
@@ -782,9 +833,10 @@ int main(int argc, char *argv[]){
 					} else {
           data0Ref   = rvwvDataset(
                         intLumiReweigh(
-                          reduceDataset(
-                          (RooDataSet*)inWS->data(Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str()))
-                         )
+                         //  reduceDataset(
+                         //  (RooDataSet*)inWS->data(Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str()))
+                         // )
+		             reduceDataset( (RooDataSet*)inWS->data(Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,flashggCatsIn_[repcatnum].c_str())), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str()) , cutforBDT_[repcatnum], cutforBDT_[repcatnum+1] )  
                        ), "RV"
                       );
 					}
@@ -800,7 +852,7 @@ int main(int argc, char *argv[]){
 
           dataRVRef=(RooDataSet*) data0Ref->Clone();
           std::cout << "[INFO] RV: replacing dataset for FITTING with new one ("<< *dataRVRef <<"), but keeping name of "<< *data0 << std::endl;
-        //  dataRVRef->SetName(data0->GetName());
+          //dataRVRef->SetName(data0->GetName());
         } else { // if the dataset was fine to begin with, make the reference dataset the original
           dataRVRef=(RooDataSet*) dataRV->Clone();
         }
@@ -824,25 +876,28 @@ int main(int argc, char *argv[]){
         
          //pick the dataset for the replacement proc and cat, reduce it (ie remove pdfWeights etc) ,
          //reweight for lumi and then get the WV events only.
+	  std::size_t foundrepcat = replancementCat.find_last_of('_');
+	  int repcatnum = stoi( replancementCat.substr(foundrepcat+1) );
+
 				 //if (beamSpotReweigh_){
                                  if (beamSpotReweigh_ && !(TString(replancementProc).Contains("tth") && mh==125)){
+				   //Below was in the original version
+				   //(RooDataSet*)inWS->data(Form("%s_%d_13TeV_%s",referenceProcWV_.c_str(),mh,referenceTagWV_.c_str()))
          data0Ref   = beamSpotReweigh( 
 				               rvwvDataset(
                         intLumiReweigh(
-                          reduceDataset(
-                          //(RooDataSet*)inWS->data(Form("%s_%d_13TeV_%s",referenceProcWV_.c_str(),mh,referenceTagWV_.c_str()))
-                            (RooDataSet*)inWS->data(Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str()))
-                         )
+                          // reduceDataset( (RooDataSet*)inWS->data(Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str())) ) 
+			  reduceDataset( (RooDataSet*)inWS->data(Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,flashggCatsIn_[repcatnum].c_str())), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str()) , cutforBDT_[repcatnum], cutforBDT_[repcatnum+1] )  
                        ), "WV"
                       )
 										);
 				 } else {
          data0Ref   = rvwvDataset(
                         intLumiReweigh(
-                          reduceDataset(
-                          //(RooDataSet*)inWS->data(Form("%s_%d_13TeV_%s",referenceProcWV_.c_str(),mh,referenceTagWV_.c_str()))
-                          	(RooDataSet*)inWS->data(Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str()))
-                         )
+                          // reduceDataset(
+			  // 		(RooDataSet*)inWS->data(Form("%s_%d_13TeV_%s",referenceProcWV_.c_str(),mh,referenceTagWV_.c_str()))
+			  // 		)
+		             reduceDataset( (RooDataSet*)inWS->data(Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,flashggCatsIn_[repcatnum].c_str())), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str()) , cutforBDT_[repcatnum], cutforBDT_[repcatnum+1] )  
                        ), "WV"
                       );
 					}
@@ -858,7 +913,8 @@ int main(int argc, char *argv[]){
 
           dataWVRef = (RooDataSet*) data0Ref->Clone();
           std::cout << "[INFO] WV: replacing dataset for FITTING with new one ("<< *dataWVRef <<"), but keeping name of "<< *data0 << std::endl;
-         // dataWVRef->SetName(data0->GetName());
+	  //WHY WAS THIS COMMENTED OUT?
+	  dataWVRef->SetName(data0->GetName());
         } else {
           dataWVRef=(RooDataSet*) dataWV->Clone();
         }
@@ -880,6 +936,7 @@ int main(int argc, char *argv[]){
     //check consistency of the three datasets!!
     TString check="";
     for (std::map<int,RooDataSet*>::iterator it=FITdatasetsRV.begin(); it!=FITdatasetsRV.end(); ++it){
+      std::cout << "In RV loop" << std::endl;
       if (check=="") {
        TString name=it->second->GetName();
         check = name.ReplaceAll(TString(Form("%d",it->first)),TString(""));
@@ -891,6 +948,7 @@ int main(int argc, char *argv[]){
     }
     check="";
     for (std::map<int,RooDataSet*>::iterator it=FITdatasetsWV.begin(); it!=FITdatasetsWV.end(); ++it){
+      std::cout << "In WV loop" << std::endl;
       if (check=="") {
        TString name=it->second->GetName();
         check = name.ReplaceAll(TString(Form("%d",it->first)),TString(""));
@@ -1083,6 +1141,7 @@ int main(int argc, char *argv[]){
     }
     // this guy constructs the final model with systematics, eff*acc etc.
     if (isFlashgg_){
+
         
       outWS->import(*intLumi_);
       FinalModelConstruction finalModel(massList_, mass_,MH,intLumi_,mhLow_,mhHigh_,proc,cat,doSecondaryModels_,systfilename_,skipMasses_,verbose_,procs_, flashggCats_,plotDir_, isProblemCategory,isCutBased_,sqrts_,doQuadraticSigmaSum_);
@@ -1136,7 +1195,12 @@ int main(int argc, char *argv[]){
     
     // if we are doing jobs for each proc/tag, want to do the split.
     bool split =0;
-    if (split_.size() > 0) split=1; 
+    std::cout << split_.size() << std::endl;
+    if (split_.size() > 0) {
+      std::cout << split_.size() << std::endl;
+      std::cout << "Inside split ------------------------------" << std::endl;
+      split=1;
+    } 
     packager.packageOutput(/*split*/split, /*proc*/split_[0], /*tag*/ split_[1] );
     sw.Stop();
     cout << "[INFO] Combination complete." << endl;

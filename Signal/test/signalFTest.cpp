@@ -46,7 +46,11 @@ string procString_;
 int ncats_;
 bool recursive_=false;
 string flashggCatsStr_;
+string flashggCatsStrIn_;
+string cutforBDTStr_;				
 vector<string> flashggCats_;
+vector<string> cutforBDT_;
+vector<string> flashggCatsIn_;
 string considerOnlyStr_;
 vector<string> considerOnly_;
 bool forceFracUnity_=false;
@@ -68,6 +72,8 @@ void OptionParser(int argc, char *argv[]){
 		("isFlashgg",	po::value<bool>(&isFlashgg_)->default_value(true),													"Use flashgg format")
 		("verbose",	po::value<bool>(&verbose_)->default_value(false),													"Use flashgg format")
 		("flashggCats,f", po::value<string>(&flashggCatsStr_)->default_value("UntaggedTag_0,UntaggedTag_1,UntaggedTag_2,UntaggedTag_3,UntaggedTag_4,VBFTag_0,VBFTag_1,VBFTag_2,TTHHadronicTag,TTHLeptonicTag,VHHadronicTag,VHTightTag,VHLooseTag,VHEtTag"),       "Flashgg category names to consider")
+		("flashggCatsIn", po::value<string>(&flashggCatsStrIn_)->default_value("UntaggedTag_0,UntaggedTag_1,UntaggedTag_2,UntaggedTag_3,UntaggedTag_4,VBFTag_0,VBFTag_1,VBFTag_2,TTHHadronicTag,TTHLeptonicTag,VHHadronicTag,VHTightTag,VHLooseTag,VHEtTag"),       "Flashgg category names to consider")
+		("cutforBDT", po::value<string>(&cutforBDTStr_)->default_value("0.2,0.4,0.6,0.8,1.0"),       "The dijet_mva cut to specific bins cut")
 		("considerOnly", po::value<string>(&considerOnlyStr_)->default_value("All"), 
     "If you wish to only consider a subset cat in the list, list them as separated by commas. ")
 		;
@@ -148,6 +154,28 @@ double getMyNLL(RooRealVar *var, RooAbsPdf *pdf, RooDataHist *data){
 	return -1.*sum;
 }
 
+RooDataSet * reduceDataset(RooDataSet *data0, string catname, string catlow, string cathigh){
+
+  // string thename = data0->GetName() + catname;
+  string thename = catname;
+
+  RooDataSet *datasetReduced = (RooDataSet*) data0->emptyClone( thename.c_str(), thename.c_str());
+  std::cout << data0->GetName()  << std::endl;
+
+  //RooDataSet *data = (RooDataSet*) data0->emptyClone()->reduce(RooArgSet(*mass_, *dijet_mva_));
+
+  for (int i=0 ; i < data0->numEntries() ; i++){
+      float dm = data0->get(i)->getRealValue("dijet_mva");
+    
+      if ( dm < std::stof(cathigh) && dm >= std::stof(catlow) ){
+	// std::cout << "weight" << data0->weight() << endl;
+      datasetReduced->add(*(data0->get(i)), data0->weight() );
+
+      //data->add( RooArgList(*mass_,  *dijet_mva_), 1.0 );
+    }
+  }
+  return datasetReduced;
+}
 
 int main(int argc, char *argv[]){
 
@@ -194,6 +222,8 @@ int main(int argc, char *argv[]){
 	vector<string> procs;
 	split(procs,procString_,boost::is_any_of(","));
 	split(flashggCats_,flashggCatsStr_,boost::is_any_of(","));
+	split(flashggCatsIn_,flashggCatsStrIn_,boost::is_any_of(","));
+	split(cutforBDT_,cutforBDTStr_,boost::is_any_of(","));
 	split(considerOnly_,considerOnlyStr_,boost::is_any_of(","));
   
   // automatically determine nCats from flashggCats input
@@ -292,6 +322,7 @@ int main(int argc, char *argv[]){
 		if (continueFlag){ continueFlag=0; continue;}
     
   if(verbose_) std::cout << "[INFO] on cat " << flashggCats_[cat] <<  " start looping through procs  " << procs.size() << " to get datasets " <<std::endl;
+
     // now main loop through processes...
 		for (unsigned int p=0; p<procs.size(); p++){
       
@@ -312,24 +343,27 @@ int main(int argc, char *argv[]){
       
       // access dataset and immediately reduce it!
 			if (isFlashgg_){
-				RooDataSet *data0   = (RooDataSet*)inWS->data(
-          Form("%s_%d_13TeV_%s",proc.c_str(),mass_,flashggCats_[cat].c_str()));
+	  // 			RooDataSet *data0   = (RooDataSet*)inWS->data(
+          // Form("%s_%d_13TeV_%s",proc.c_str(),mass_,flashggCats_[cat].c_str()));
+			  RooDataSet *dataFullin   = (RooDataSet*)inWS->data(Form("%s_%d_13TeV_%s",proc.c_str(),mass_,flashggCatsIn_[cat].c_str()));
         if(verbose_) {
-          std::cout << "[INFO] got dataset data0 ? " << data0 << "now make empty clones " << std::endl;
-          if (data0) {
-            std::cout << "[INFO] and it looks like this : " << *data0 << std::endl;
+          std::cout << "[INFO] got dataset data0 ? " << dataFullin << "now make empty clones " << std::endl;
+          if (dataFullin) {
+            std::cout << "[INFO] and it looks like this : " << *dataFullin << std::endl;
           } else {
             std::cout << "[INFO] but it is a null pointer! extit " << std::endl;
             exit (1);
           }
         }
         
+	RooDataSet *data0 =  reduceDataset(dataFullin, Form("%s_%d_13TeV_%s",proc.c_str(),mass_,flashggCats_[cat].c_str()) , cutforBDT_[cat], cutforBDT_[cat+1]);  
+
         data = (RooDataSet*) data0->emptyClone()->reduce(RooArgSet(*mass, *dZ));
         dataRV = (RooDataSet*) data0->emptyClone()->reduce(RooArgSet(*mass, *dZ));
         dataWV = (RooDataSet*) data0->emptyClone()->reduce(RooArgSet(*mass, *dZ));
 
 
-        for (unsigned int i=0 ; i < data0->numEntries() ; i++){
+        for (int i=0 ; i < data0->numEntries() ; i++){
             mass->setVal(data0->get(i)->getRealValue("CMS_hgg_mass"));
             weight0->setVal(data0->weight() ); // <--- is this correct?
             dZ->setVal(data0->get(i)->getRealValue("dZ"));

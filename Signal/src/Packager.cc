@@ -63,9 +63,11 @@ void Packager::packageOutput(bool split, string process , string tag){
 			for (vector<string>::iterator proc=procs_.begin(); proc!=procs_.end(); proc++){
 				RooDataSet *tempData = 0;
 				if( merge ) { 
+				  std::cout << "---11111111111111111111111111111111111111111111111111" << std::endl;
 					tempData = (RooDataSet*)mergeWS->data(Form("sig_%s_mass_m%d_%s",proc->c_str(),mh,catname.c_str()));
 					if(tempData && !saveWS->data(Form("sig_%s_mass_m%d_%s",proc->c_str(),mh,catname.c_str())))  saveWS->import(*tempData); //FIXME
 				} else {
+				  std::cout << "---------------------222222222222222222222222222222222222222222222222222" << std::endl;
 					tempData = (RooDataSet*)WS->data(Form("sig_%s_mass_m%d_%s",proc->c_str(),mh,catname.c_str()));
 					if(tempData && !saveWS->data(Form("sig_%s_mass_m%d_%s",proc->c_str(),mh,catname.c_str())))  saveWS->import(*tempData); //FIXME
 				}
@@ -75,12 +77,26 @@ void Packager::packageOutput(bool split, string process , string tag){
 					continue;
 				}
          if (!split_){
-				if ( cat==0 && proc==procs_.begin()) allDataThisMass = (RooDataSet*)tempData->Clone(Form("sig_mass_m%d_AllCats",mh));
-				else allDataThisMass->append(*tempData);
+	   if ( cat==0 && proc==procs_.begin()) {
+	     std::cout << "11111111111111111111111111111111111111111111111111" << std::endl;
+	     allDataThisMass = (RooDataSet*)tempData->Clone(Form("sig_mass_m%d_AllCats",mh));
+	     std::cout << "222222222222222222222222222222222222222222222222222" << std::endl;
+	   } else {
+	     std::cout << "333333333333333333333333333333333333333333333333333" << std::endl;
+	     allDataThisMass->append(*tempData);
+	     std::cout << "444444444444444444444444444444444444444444444444444444" << std::endl;
+	   }
         }
 				//if (proc==procs_.begin()) allDataThisCat = (RooDataSet*)tempData->Clone(Form("sig_mass_m%d_%s",mh,catname.c_str()));
-				if (!allDataThisCat) allDataThisCat = (RooDataSet*)tempData->Clone(Form("sig_mass_m%d_%s",mh,catname.c_str()));
-				else allDataThisCat->append(*tempData);
+	 if (!allDataThisCat) {
+	   std::cout << "5555555555555555555555555555555555555555555555" << std::endl;
+	   allDataThisCat = (RooDataSet*)tempData->Clone(Form("sig_mass_m%d_%s",mh,catname.c_str()));
+	   std::cout << "66666666666666666666666666" << std::endl;
+	 } else { 
+	   std::cout << "777777777777777777777777" << std::endl;
+	   allDataThisCat->append(*tempData);
+	   std::cout << "888888888888888888888888" << std::endl;
+	 }
 			}
 			if (!allDataThisCat) {
 			if (!split_)	cerr << "[WARNING] -- allData for cat " << catname.c_str() << " is NULL. Probably because the relevant datasets couldn't be found. Skipping.. (ignore this warning if just running one tag/proc)" << endl;

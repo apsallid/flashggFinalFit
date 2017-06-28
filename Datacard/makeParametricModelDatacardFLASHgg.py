@@ -13,12 +13,33 @@ import os,sys,copy,math
 ## PARSE ROOT MACROS  #########################################################
 ###############################################################################
 import ROOT as r
+from ROOT import RooDataSet
 #if options.quadInterpolate:
 #  r.gROOT.ProcessLine(".L quadInterpolate.C+g")
 #  from ROOT import quadInterpolate
 r.gROOT.ProcessLine(".L $CMSSW_BASE/lib/$SCRAM_ARCH/libHiggsAnalysisCombinedLimit.so")
 #r.gROOT.ProcessLine(".L ../libLoopAll.so")
 ###############################################################################
+def reduceDataset(data0, dataNameout, catlow, cathigh):
+        
+    #datasetReduced = data0.emptyClone( dataNameout, dataNameout )
+    datasetReduced = data0.emptyClone()
+    # datasetReduced = RooDataSet( data0.emptyClone( dataNameout, dataNameout ) )
+    #datasetReduced = RooDataSet( dataNameout, dataNameout )
+    print data0.GetName()
+    print datasetReduced.GetName()
+    #print "11111111111111111111"
+    for i in range(0,int(data0.numEntries())):
+       #print "22222222222222222222222222222222222"
+       dm = data0.get(i).getRealValue("dijet_mva")
+       #print "3333333333" , dm
+
+       if ( (dm < float(cathigh)) and (dm >= float(catlow)) ):
+          #print "555555555555555555555555555555"
+          #print "weight ", data0.weight()
+          datasetReduced.add( data0.get(i) , data0.weight())
+
+    return datasetReduced
 
 ###############################################################################
 ## WSTFileWrapper  ############################################################
@@ -33,7 +54,7 @@ class WSTFileWrapper:
     self.fnList = files.split(",") # [1]       
     self.fileList = []
     self.wsList = [] #now list of ws names...
-    #print files
+    print files
     for fn in self.fnList: # [2]
         f = r.TFile.Open(fn) 
         self.fileList.append(f)
@@ -51,22 +72,60 @@ class WSTFileWrapper:
             theDataName = dataName.replace(stxsProc,tpMap[stxsProc],1)
         return [theDataName,theProcName]
 
-   def data(self,dataName):
-        thePair = self.convertTemplatedName(dataName)
-        newDataName = thePair[0]
-        newProcName = thePair[1]
-        result = None
-        complained_yet = 0 
-        for i in range(len(self.fnList)):
-          if self.fnList[i]!="current file":
-            if newProcName not in self.fnList[i] and newProcName!="": continue
-            this_result_obj = self.wsList[i].data(newDataName);
-            if ( result and this_result_obj and (not complained_yet) ):
-              complained_yet = True;
-            if this_result_obj: # [3]
-               result = this_result_obj
-        return result 
+
    
+   def datawei(self,dataName):
+        result = None
+        complained_yet =0 
+        for i in range(len(self.fnList)):
+           print self.wsList[i].GetName()
+           this_result_obj = self.wsList[i].data(dataName);
+           if ( result and this_result_obj and (not complained_yet) ):
+            print "---------"   
+            complained_yet = true;
+           if this_result_obj: # [3]
+             result = this_result_obj
+        return result 
+        
+        
+   '''
+   def reduceDataset(self,data0, dataNameout, catlow, cathigh):
+        
+        #datasetReduced = data0.emptyClone( dataNameout, dataNameout )
+        datasetReduced = data0.emptyClone()
+        # datasetReduced = RooDataSet( data0.emptyClone( dataNameout, dataNameout ) )
+        #datasetReduced = RooDataSet( dataNameout, dataNameout )
+        print data0.GetName()
+        print datasetReduced.GetName()
+        print "11111111111111111111"
+        for i in range(0,int(data0.numEntries())):
+           print "22222222222222222222222222222222222"
+           dm = data0.get(i).getRealValue("dijet_mva")
+           print "3333333333" , dm
+
+           if ( (dm < float(cathigh)) and (dm >= float(catlow)) ):
+              print "555555555555555555555555555555"
+              print "weight ", data0.weight()
+              datasetReduced.add( data0.get(i) , data0.weight())
+ 
+        return datasetReduced
+   '''
+
+
+   def data(self,dataName, dataNameout, catlow, cathigh):
+        result = None
+        complained_yet =0 
+        this_result_obj = None
+        for i in range(len(self.fnList)):
+          this_result_obj0 = self.wsList[i].data(dataName);
+          if ( result and this_result_obj0 and (not complained_yet) ):
+            complained_yet = true;
+          if this_result_obj0: # [3]
+             this_result_obj = reduceDataset( this_result_obj0,  dataNameout , catlow, cathigh )
+             result = this_result_obj
+        return result 
+
+
    def var(self,varName):
         result = None
         complained_yet =0 
@@ -90,6 +149,9 @@ parser.add_option("-i","--infilename", help="Input file (binned signal from flas
 parser.add_option("-o","--outfilename",default="cms_hgg_datacard.txt",help="Name of card to print (default: %default)")
 parser.add_option("-p","--procs",default="ggh,vbf,wh,zh,tth",help="String list of procs (default: %default)")
 parser.add_option("-c","--cats",default="UntaggedTag_0,UntaggedTag_1,UntaggedTag_2,UntaggedTag_3,UntaggedTag_4,VBFTag_0,VBFTag_1,VBFTag_2",help="Flashgg Categories (default: %default)")
+#parser.add_option("--cin","--catsin",default="VBFTag",help="Flashgg Categories input before split (default: %default)")
+parser.add_option("--catsin",default="VBFTag",help="Flashgg Categories input before split (default: %default)")
+parser.add_option("--cutforBDT","--cutforBDT",default="0.2,0.4,0.6,0.8,1.0",help="Flashgg Categories (default: %default)")
 parser.add_option("--uepsfilename",default="",help="input files for calculating UEPS systematics; leave blank to use most recent set")
 parser.add_option("--batch",default="LSF",help="Batch system  (default: %default)")
 parser.add_option("--photonCatScales",default="HighR9EE,LowR9EE,HighR9EB,LowR9EB",help="String list of photon scale nuisance names - WILL NOT correlate across years (default: %default)")
@@ -126,12 +188,14 @@ outFile = open(options.outfilename,'w')
 ## PROCS HANDLING & DICT ######################################################
 ###############################################################################
 # convert flashgg style to combine style process
+combProc = {'ggh':'ggH_hgg','vbf':'qqH_hgg','wzh':'VH','wh':'WH_hgg','zh':'ZH_hgg','tth':'ttH_hgg','bkg_mass':'bkg_mass','gg_grav':'ggH_hgg_ALT','qq_grav':'qqbarH_ALT'}
 #combProc = {'ggH':'ggH_hgg','VBF':'qqH_hgg','ggh':'ggH_hgg','vbf':'qqH_hgg','wzh':'VH','wh':'WH_hgg','zh':'ZH_hgg','tth':'ttH_hgg','bkg_mass':'bkg_mass','gg_grav':'ggH_hgg_ALT','qq_grav':'qqbarH_ALT'}
-combProc = {'GG2H':'ggH_hgg','VBF':'qqH_hgg','TTH':'ttH_hgg','QQ2HLNU':'WH_lep_hgg','QQ2HLL':'ZH_lep_hgg','WH2HQQ':'WH_had_hgg','ZH2HQQ':'ZH_had_hgg','testBBH':'bbH_hgg','testTHQ':'tHq_hgg','testTHW':'tHW_hgg','bkg_mass':'bkg_mass'}
-#flashggProc = {'ggH_hgg':'ggh','qqH_hgg':'vbf','VH':'wzh','WH_hgg':'wh','ZH_hgg':'zh','ttH_hgg':'tth','bkg_mass':'bkg_mass','ggH_hgg_ALT':'gg_grav','qqbarH_ALT':'qq_grav'}
+#combProc = {'GG2H':'ggH_hgg','VBF':'qqH_hgg','TTH':'ttH_hgg','QQ2HLNU':'WH_lep_hgg','QQ2HLL':'ZH_lep_hgg','WH2HQQ':'WH_had_hgg','ZH2HQQ':'ZH_had_hgg','testBBH':'bbH_hgg','testTHQ':'tHq_hgg','testTHW':'tHW_hgg','bkg_mass':'bkg_mass'}
+flashggProc = {'ggH_hgg':'ggh','qqH_hgg':'vbf','VH':'wzh','WH_hgg':'wh','ZH_hgg':'zh','ttH_hgg':'tth','bkg_mass':'bkg_mass','ggH_hgg_ALT':'gg_grav','qqbarH_ALT':'qq_grav'}
 #flashggProc = {'ggH_hgg':'ggh','qqH_hgg':'vbf','ttH_hgg':'tth','WH_lep_hgg':'wh','ZH_lep_hgg':'zh','WH_had_hgg':'wh','ZH_had_hgg':'zh','bkg_mass':'bkg_mass'}
-flashggProc = {'ggH_hgg':'GG2H','qqH_hgg':'VBF','ttH_hgg':'TTH','WH_lep_hgg':'QQ2HLNU','ZH_lep_hgg':'QQ2HLL','WH_had_hgg':'WH2HQQ','ZH_had_hgg':'ZH2HQQ','bbH_hgg':'testBBH','tHq_hgg':'testTHQ','tHW_hgg':'testTHW','bkg_mass':'bkg_mass'}
-procId = {'ggH_hgg':0,'qqH_hgg':-1,'ttH_hgg':-2,'WH_lep_hgg':-2,'ZH_lep_hgg':-3,'WH_had_hgg':-4,'ZH_had_hgg':-5,'bbH_hgg':-6,'tHq_hgg':-7,'tHW_hgg':-8,'bkg_mass':1}
+#flashggProc = {'ggH_hgg':'GG2H','qqH_hgg':'VBF','ttH_hgg':'TTH','WH_lep_hgg':'QQ2HLNU','ZH_lep_hgg':'QQ2HLL','WH_had_hgg':'WH2HQQ','ZH_had_hgg':'ZH2HQQ','bbH_hgg':'testBBH','tHq_hgg':'testTHQ','tHW_hgg':'testTHW','bkg_mass':'bkg_mass'}
+#procId = {'ggH_hgg':0,'qqH_hgg':-1,'ttH_hgg':-2,'WH_lep_hgg':-2,'ZH_lep_hgg':-3,'WH_had_hgg':-4,'ZH_had_hgg':-5,'bbH_hgg':-6,'tHq_hgg':-7,'tHW_hgg':-8,'bkg_mass':1}
+procId = {'ggH_hgg':0,'qqH_hgg':-1,'ttH_hgg':-2,'WH_hgg':-3,'ZH_hgg':-4,'bkg_mass':1}
 bkgProcs = ['bkg_mass','bbH_hgg','tHq_hgg','tHW_hgg'] #what to treat as background
 #Determine if VH or WZH_hgg
 splitVH=False
@@ -150,6 +214,8 @@ options.toSkip = options.toSkip.split(',')
 ###############################################################################
 #split cats
 options.cats = options.cats.split(',')
+options.catsin = options.catsin.split(',')
+options.cutforBDT = options.cutforBDT.split(',')
 # cat types
 incCats     =[] #Untagged
 dijetCats   =[] #VBF 
@@ -234,21 +300,22 @@ dataWS = 'multipdf'
 bkgWS = 'multipdf'
 #sigFile = 'CMS-HGG_%s_%dTeV_sigfit.root'%(file_ext,sqrts)
 sigFile = 'CMS-HGG_sigfit_%s_$PROC_$CAT.root'%(file_ext)
-#print "making sigfile " ,sigFile
+print "making sigfile " ,sigFile
 sigWS = 'wsig_%dTeV'%(sqrts)
 # file detaisl: for FLashgg always use unbinned signal and multipdf
 fileDetails = {}
 fileDetails['data_obs'] = [dataFile,dataWS,'roohist_data_mass_$CHANNEL']
 fileDetails['bkg_mass']  = [bkgFile,bkgWS,'CMS_hgg_$CHANNEL_%dTeV_bkgshape'%sqrts]
 
-#fileDetails['ggH_hgg']       = [sigFile.replace('$PROC',"ggh"),sigWS,'hggpdfsmrel_%dTeV_ggh_$CHANNEL'%sqrts]
-#fileDetails['qqH_hgg']       = [sigFile.replace('$PROC',"vbf"),sigWS,'hggpdfsmrel_%dTeV_vbf_$CHANNEL'%sqrts]
-#fileDetails['ttH_hgg']       = [sigFile.replace('$PROC',"tth"),sigWS,'hggpdfsmrel_%dTeV_tth_$CHANNEL'%sqrts]
+fileDetails['ggH_hgg']       = [sigFile.replace('$PROC',"ggh"),sigWS,'hggpdfsmrel_%dTeV_ggh_$CHANNEL'%sqrts]
+fileDetails['qqH_hgg']       = [sigFile.replace('$PROC',"vbf"),sigWS,'hggpdfsmrel_%dTeV_vbf_$CHANNEL'%sqrts]
+fileDetails['ttH_hgg']       = [sigFile.replace('$PROC',"tth"),sigWS,'hggpdfsmrel_%dTeV_tth_$CHANNEL'%sqrts]
 #fileDetails['WH_lep_hgg']       = [sigFile.replace('$PROC',"wh"),sigWS,'hggpdfsmrel_%dTeV_wh_$CHANNEL'%sqrts]
 #fileDetails['ZH_lep_hgg']       = [sigFile.replace('$PROC',"zh"),sigWS,'hggpdfsmrel_%dTeV_zh_$CHANNEL'%sqrts]
 #fileDetails['WH_had_hgg']       = [sigFile.replace('$PROC',"wh"),sigWS,'hggpdfsmrel_%dTeV_wh_$CHANNEL'%sqrts]
 #fileDetails['ZH_had_hgg']       = [sigFile.replace('$PROC',"zh"),sigWS,'hggpdfsmrel_%dTeV_zh_$CHANNEL'%sqrts]
 
+'''
 fileDetails['ggH_hgg']       = [sigFile.replace('$PROC',"GG2H"),sigWS,'hggpdfsmrel_%dTeV_GG2H_$CHANNEL'%sqrts]
 fileDetails['qqH_hgg']       = [sigFile.replace('$PROC',"VBF"),sigWS,'hggpdfsmrel_%dTeV_VBF_$CHANNEL'%sqrts]
 fileDetails['ttH_hgg']       = [sigFile.replace('$PROC',"TTH"),sigWS,'hggpdfsmrel_%dTeV_TTH_$CHANNEL'%sqrts]
@@ -259,12 +326,13 @@ fileDetails['ZH_had_hgg']       = [sigFile.replace('$PROC',"ZH2HQQ"),sigWS,'hggp
 fileDetails['bbH_hgg']       = [sigFile.replace('$PROC',"testBBH"),sigWS,'hggpdfsmrel_%dTeV_testBBH_$CHANNEL'%sqrts]
 fileDetails['tHq_hgg']       = [sigFile.replace('$PROC',"testTHQ"),sigWS,'hggpdfsmrel_%dTeV_testTHQ_$CHANNEL'%sqrts]
 fileDetails['tHW_hgg']       = [sigFile.replace('$PROC',"testTHW"),sigWS,'hggpdfsmrel_%dTeV_testTHW_$CHANNEL'%sqrts]
+'''
 
-#if splitVH:
-#  fileDetails['WH_hgg']       =  [sigFile.replace('$PROC',"wh"),sigWS,'hggpdfsmrel_%dTeV_wh_$CHANNEL'%sqrts]
-#  fileDetails['ZH_hgg']       =  [sigFile.replace('$PROC',"zh"),sigWS,'hggpdfsmrel_%dTeV_zh_$CHANNEL'%sqrts]
-#else:
-#  fileDetails['VH']       =  [sigFile.replace('$PROC',"wzh"),sigWS,'hggpdfsmrel_%dTeV_wzh_$CHANNEL'%sqrts]
+if splitVH:
+  fileDetails['WH_hgg']       =  [sigFile.replace('$PROC',"wh"),sigWS,'hggpdfsmrel_%dTeV_wh_$CHANNEL'%sqrts]
+  fileDetails['ZH_hgg']       =  [sigFile.replace('$PROC',"zh"),sigWS,'hggpdfsmrel_%dTeV_zh_$CHANNEL'%sqrts]
+else:
+  fileDetails['VH']       =  [sigFile.replace('$PROC',"wzh"),sigWS,'hggpdfsmrel_%dTeV_wzh_$CHANNEL'%sqrts]
 ###############################################################################
 
 ###############################################################################
@@ -284,17 +352,23 @@ theorySystAbsScale={}
 #theorySystAbsScale['names_to_consider'] = ["QCDscale_qqbar_up","QCDscale_gg_up","QCDscale_qqbar_down","QCDscale_gg_down","pdf_alphaS_qqbar","pdf_alphaS_gg"]  
 #theorySystAbsScale['names'] = ["QCDscale_qqbar_up","QCDscale_gg_up","QCDscale_qqbar_down","QCDscale_gg_down","pdf_alphaS_qqbar","pdf_alphaS_gg"] 
 #theorySystAbsScale['names_to_consider'] =   ["QCDscale_ggH_up",  "QCDscale_qqH_up",  "QCDscale_VH_up",  "QCDscale_ttH_up",  "QCDscale_ggH_down",  "QCDscale_qqH_down",  "QCDscale_VH_down",  "QCDscale_ttH_down",  "pdf_Higgs_qqbar",  "pdf_alphaS_gg",  "pdf_alphaS_ttH"] #QCD scale up, QCD scale down, PDF+alpha S, PDF, alpha S 
+
+#theorySystAbsScale['names'] = ["QCDscale_qqbar_up","QCDscale_gg_up","QCDscale_qqbar_down","QCDscale_gg_down","pdf_alphaS_qqbar","pdf_alphaS_gg"] #QCD scale up, QCD scale down, PDF+alpha S, PDF, alpha S 
+
 theorySystAbsScale['names'] =   ["QCDscale_ggH_up",  "QCDscale_qqH_up",  "QCDscale_VH_up",  "QCDscale_ttH_up",  "QCDscale_ggH_down",  "QCDscale_qqH_down",  "QCDscale_VH_down",  "QCDscale_ttH_down",  "pdf_Higgs_qqbar",  "pdf_Higgs_gg",  "pdf_Higgs_ttH"] #QCD scale up, QCD scale down, PDF+alpha S, PDF, alpha S 
 theorySystAbsScale['ttH_hgg'] = [0.0,                 0.0,                0.0,               0.058,              0.0,                   0.0,                 0.0,                 -0.092,               0.0,                0.0,              0.036] # ttH is a _qqbar process
-theorySystAbsScale['ZH_lep_hgg'] =  [0.0,                 0.0,                0.038,             0.0,                0.0,                   0.0,                 -0.03,               0.0,                  0.016,              0.0,              0.0] # WH is a _qqbar process
-theorySystAbsScale['ZH_had_hgg'] =  [0.0,                 0.0,                0.038,             0.0,                0.0,                   0.0,                 -0.03,               0.0,                  0.016,              0.0,              0.0] # WH is a _qqbar process
-theorySystAbsScale['WH_lep_hgg'] =  [0.0,                 0.0,                0.005,             0.0,                0.0,                   0.0,                 -0.007,              0.0,                  0.019,              0.0,              0.0] # ZH is a _qqbar process
-theorySystAbsScale['WH_had_hgg'] =  [0.0,                 0.0,                0.005,             0.0,                0.0,                   0.0,                 -0.007,              0.0,                  0.019,              0.0,              0.0] # ZH is a _qqbar process
+#theorySystAbsScale['ZH_lep_hgg'] =  [0.0,                 0.0,                0.038,             0.0,                0.0,                   0.0,                 -0.03,               0.0,                  0.016,              0.0,              0.0] # WH is a _qqbar process
+theorySystAbsScale['ZH_hgg'] =  [0.0,                 0.0,                0.038,             0.0,                0.0,                   0.0,                 -0.03,               0.0,                  0.016,              0.0,              0.0] # WH is a _qqbar process
+#theorySystAbsScale['ZH_had_hgg'] =  [0.0,                 0.0,                0.038,             0.0,                0.0,                   0.0,                 -0.03,               0.0,                  0.016,              0.0,              0.0] # WH is a _qqbar process
+#theorySystAbsScale['WH_lep_hgg'] =  [0.0,                 0.0,                0.005,             0.0,                0.0,                   0.0,                 -0.007,              0.0,                  0.019,              0.0,              0.0] # ZH is a _qqbar process
+theorySystAbsScale['WH_hgg'] =  [0.0,                 0.0,                0.005,             0.0,                0.0,                   0.0,                 -0.007,              0.0,                  0.019,              0.0,              0.0] # ZH is a _qqbar process
+#theorySystAbsScale['WH_had_hgg'] =  [0.0,                 0.0,                0.005,             0.0,                0.0,                   0.0,                 -0.007,              0.0,                  0.019,              0.0,              0.0] # ZH is a _qqbar process
 theorySystAbsScale['qqH_hgg'] = [0.0,                 0.004,              0.0,               0.0,                0.0,                   -0.003,              0.0,                 0.0,                  0.021,              0.0,              0.0] # qqH is a _qqbar process
-theorySystAbsScale['bbH_hgg'] = [0.0,                 0.0,                0.0,               0.202,              0.0,                   0.0,                 0.0,                 -0.239,               0.0,                0.0,              0.036] # ttH is a _qqbar process
-theorySystAbsScale['tHq_hgg'] = [0.0,                 0.0,                0.0,               0.065,              0.0,                   0.0,                 0.0,                 -0.149,               0.0,                0.0,              0.036] # ttH is a _qqbar process
-theorySystAbsScale['tHW_hgg'] = [0.0,                 0.0,                0.0,               0.049,              0.0,                   0.0,                 0.0,                 -0.067,               0.0,                0.0,              0.036] # ttH is a _qqbar process
+#theorySystAbsScale['bbH_hgg'] = [0.0,                 0.0,                0.0,               0.202,              0.0,                   0.0,                 0.0,                 -0.239,               0.0,                0.0,              0.036] # ttH is a _qqbar process
+#theorySystAbsScale['tHq_hgg'] = [0.0,                 0.0,                0.0,               0.065,              0.0,                   0.0,                 0.0,                 -0.149,               0.0,                0.0,              0.036] # ttH is a _qqbar process
+#theorySystAbsScale['tHW_hgg'] = [0.0,                 0.0,                0.0,               0.049,              0.0,                   0.0,                 0.0,                 -0.067,               0.0,                0.0,              0.036] # ttH is a _qqbar process
 theorySystAbsScale['ggH_hgg'] = [0.039,               0.0,                0.0,               0.0,                -0.039,               0.0,                  0.0,                 0.0,                  0.0,                0.032,            0.0] # GGH is a _gg process
+
 
 ##############################################################################
 ## Calculate overall effect of theory systematics
@@ -303,11 +377,15 @@ result ={}
 mass = inWS.var("CMS_hgg_mass")
 norm_factors_file = open('norm_factors_new.py','w')
 inclusiveCats = list(options.cats) #need the list() otherwise NoTag will also be appended to options.cats
-inclusiveCats.append("NoTag")
+catsin = list(options.catsin)
+cutforBDT = list(options.cutforBDT)
+#inclusiveCats.append("NoTag")
 for proc in options.procs:
   if proc in bkgProcs: continue
   for name in theorySyst.keys(): #wh_130_13TeV_UntaggedTag_1_pdfWeights
+    print name 
     norm_factors_file.write("%s_%s = ["%(proc,name.replace("Weight",""))) 
+    print name
     result["%s_%s"%(proc,name)] = []
     n=-1
     while (n>=-1): 
@@ -321,9 +399,13 @@ for proc in options.procs:
         continue # this will break the while loop, so we just stop when we are out of pdfWeights, scaleWeights or alphaSWeights 
       weight_central = inWS.var("centralObjectWeight") 
       weight_sumW = inWS.var("sumW")
-      for cat in inclusiveCats:
-        #print "---> this is proc ", proc, "look for", "%s_%d_13TeV_%s_pdfWeights"%(combProc.keys()[combProc.values().index(proc)],options.mass,cat) 
-        data_nominal= inWS.data("%s_%d_13TeV_%s_pdfWeights"%(combProc.keys()[combProc.values().index(proc)],options.mass,cat))
+      for cat in inclusiveCats:  
+        print "---> this is proc ", proc, "look for in ", "%s_%d_13TeV_%s_pdfWeights"%(combProc.keys()[combProc.values().index(proc)],options.mass,catsin[inclusiveCats.index(cat)]), " and out ", "%s_%d_13TeV_%s_pdfWeights"%(combProc.keys()[combProc.values().index(proc)],options.mass,cat)
+        #data_nominal= inWS.data("%s_%d_13TeV_%s_pdfWeights"%(combProc.keys()[combProc.values().index(proc)],options.mass,cat))
+        
+        data_nominal= inWS.data("%s_%d_13TeV_%s_pdfWeights"%(combProc.keys()[combProc.values().index(proc)],options.mass,catsin[inclusiveCats.index(cat)]), "%s_%d_13TeV_%s_pdfWeights"%(combProc.keys()[combProc.values().index(proc)],options.mass,cat) , cutforBDT[inclusiveCats.index(cat)], cutforBDT[inclusiveCats.index(cat)+1] )
+       
+        #data_nominal= inWS.datawei("%s_%d_13TeV_%s_pdfWeights"%(combProc.keys()[combProc.values().index(proc)],options.mass,catsin[inclusiveCats.index(cat)]) )
         data_nominal_sum = data_nominal.sumEntries()
         data_up = data_nominal.emptyClone();
         data_nominal_new = data_nominal.emptyClone();
@@ -468,7 +550,15 @@ def getFlashggLineTheoryWeights(proc,cat,name,i,asymmetric,j=0,factor=1):
   weight_central = inWS.var("centralObjectWeight") 
   weight_sumW = inWS.var("sumW") 
   #data_nominal = inWS.data("%s_%d_13TeV_%s"%(proc,options.mass,cat))
-  data_nominal= inWS.data("%s_%d_13TeV_%s_pdfWeights"%(proc,options.mass,cat))
+          #data_nominal= inWS.data("%s_%d_13TeV_%s_pdfWeights"%(combProc.keys()[combProc.values().index(proc)],options.mass,catsin[inclusiveCats.index(cat)]), "%s_%d_13TeV_%s_pdfWeights"%(combProc.keys()[combProc.values().index(proc)],options.mass,cat) , cutforBDT[inclusiveCats.index(cat)], cutforBDT[inclusiveCats.index(cat)+1] )
+  #data_nominal= inWS.data("%s_%d_13TeV_%s_pdfWeights"%(proc,options.mass,cat))
+  
+  #data_nominal= inWS.data("%s_%d_13TeV_%s_pdfWeights"%(combProc.keys()[combProc.values().index(proc)],options.mass,catsin[inclusiveCats.index(cat)]), "%s_%d_13TeV_%s_pdfWeights"%(combProc.keys()[combProc.values().index(proc)],options.mass,cat) , cutforBDT[inclusiveCats.index(cat)], cutforBDT[inclusiveCats.index(cat)+1] )
+  
+  #data_nominal= inWS.data("%s_%d_13TeV_%s_pdfWeights"%(proc,options.mass,catsin[inclusiveCats.index(cat)]),"%s_%d_13TeV_%s_pdfWeights"%(proc,options.mass,cat), cutforBDT[inclusiveCats.index(cat)], cutforBDT[inclusiveCats.index(cat)+1]   )
+
+  data_nominal= inWS.datawei("%s_%d_13TeV_%s_pdfWeights"%(proc,options.mass,catsin[inclusiveCats.index(cat)]))
+
   data_nominal_sum = data_nominal.sumEntries()
   if (data_nominal_sum <= 0.):
       print "[WARNING] This dataset has 0 or negative sum of weight. Systematic calulcxation meaningless, so list as '- '"
@@ -573,9 +663,13 @@ def getFlashggLineTheoryEnvelope(proc,cat,name,details):
   histograms=[]
   h_nominal =None
   nBins=80
-  
+
+  cfbdt = list(options.cutforBDT)
+  catlist = list(options.cats)
+  catinlist = list(options.catsin)
+
   for iReplica in indices:
-    data_nominal = inWS.data("%s_%d_13TeV_%s"%(proc,options.mass,cat)) #FIXME
+    data_nominal = inWS.data( "%s_%d_13TeV_%s"%(proc,options.mass,catinlist[catlist.index(cat)]), "%s_%d_13TeV_%s"%(proc,options.mass,cat), cfbdt[catlist.index(cat)], cfbdt[catlist.index(cat)+1]) #FIXME
     data_nominal_num = data_nominal.numEntries()
     data_new_h = r.TH1F("h_%d"%iReplica,"h_%d"%iReplica,nBins,100,180);
     data_nom_h = r.TH1F("h_nom_%d"%iReplica,"h_nom_%d"%iReplica,nBins,100,180);
@@ -1066,11 +1160,18 @@ def printNuisParams():
 def getFlashggLine(proc,cat,syst):
   asymmetric=False 
   eventweight=False 
-  #print "===========> SYST", syst ," PROC ", proc , ", TAG ", cat
-  dataSYMMETRIC =  inWS.data("%s_%d_13TeV_%s_%s"%(flashggProc[proc],options.mass,cat,syst)) #Will exist if the systematic is a symmetric uncertainty not stored as event weights
-  dataDOWN =  inWS.data("%s_%d_13TeV_%s_%sDown01sigma"%(flashggProc[proc],options.mass,cat,syst)) # will exist if teh systematic is an asymetric uncertainty not strore as event weights
-  dataUP =  inWS.data("%s_%d_13TeV_%s_%sUp01sigma"%(flashggProc[proc],options.mass,cat,syst))# will exist if teh systematic is an asymetric uncertainty not strore as event weights
-  dataNOMINAL =  inWS.data("%s_%d_13TeV_%s"%(flashggProc[proc],options.mass,cat)) #Nominal RooDataSet,. May contain required weights if UP/DOWN/SYMMETRIC roodatahists do not exist (ie systematic stored as event weigths)
+  print "===========> SYST", syst ," PROC ", proc , ", TAG ", cat
+
+  cfbdt = list(options.cutforBDT)
+  catlist = list(options.cats)
+  catinlist = list(options.catsin)
+  
+  print catlist.index(cat), catinlist[catlist.index(cat)], syst
+ 
+  dataSYMMETRIC =  inWS.data("%s_%d_13TeV_%s_%s"%(flashggProc[proc],options.mass,catinlist[catlist.index(cat)],syst), "%s_%d_13TeV_%s_%s"%(flashggProc[proc],options.mass,cat,syst), cfbdt[catlist.index(cat)], cfbdt[catlist.index(cat)+1]) #Will exist if the systematic is a symmetric uncertainty not stored as event weights
+  dataDOWN =  inWS.data("%s_%d_13TeV_%s_%sDown01sigma"%(flashggProc[proc],options.mass,catinlist[catlist.index(cat)],syst),"%s_%d_13TeV_%s_%sDown01sigma"%(flashggProc[proc],options.mass,cat,syst), cfbdt[catlist.index(cat)], cfbdt[catlist.index(cat)+1]) # will exist if teh systematic is an asymetric uncertainty not strore as event weights
+  dataUP =  inWS.data("%s_%d_13TeV_%s_%sUp01sigma"%(flashggProc[proc],options.mass,catinlist[catlist.index(cat)],syst),"%s_%d_13TeV_%s_%sUp01sigma"%(flashggProc[proc],options.mass,cat,syst), cfbdt[catlist.index(cat)], cfbdt[catlist.index(cat)+1])# will exist if teh systematic is an asymetric uncertainty not strore as event weights
+  dataNOMINAL =  inWS.data("%s_%d_13TeV_%s"%(flashggProc[proc],options.mass,catinlist[catlist.index(cat)]),"%s_%d_13TeV_%s"%(flashggProc[proc],options.mass,cat), cfbdt[catlist.index(cat)], cfbdt[catlist.index(cat)+1]) #Nominal RooDataSet,. May contain required weights if UP/DOWN/SYMMETRIC roodatahists do not exist (ie systematic stored as event weigths)
   if (dataSYMMETRIC==None):
     if( (dataUP==None) or  (dataDOWN==None)) :
       #print "[INFO] Systematic ", syst," stored as asymmetric event weights in RooDataSet"
@@ -1178,6 +1279,11 @@ def printVbfSysts():
   # the other important thing is to adjust the name of the VBFtot -> incCats mig to 
   # correlate with combination for the QCDscale and UEPS
   print "[INFO] considering VBF catgeory migrations"
+
+  cfbdt = list(options.cutforBDT)
+  catlist = list(options.cats)
+  catinlist = list(options.catsin)
+
   # now print relevant numbers
   for vbfSystName, vbfSystValArray in vbfSysts.items():
     asymmetric=False
@@ -1248,11 +1354,11 @@ def printVbfSysts():
         sumNOMINAL=0
         sumDOWN=0
         for c in cats:
-          data =  inWS.data("%s_%d_13TeV_%s_%s"%(flashggProc[p],options.mass,c,syst))
-          dataDOWN =  inWS.data("%s_%d_13TeV_%s_%sDown01sigma"%(flashggProc[p],options.mass,c,syst))
-          dataNOMINAL =  inWS.data("%s_%d_13TeV_%s"%(flashggProc[p],options.mass,c))
+          data =  inWS.data("%s_%d_13TeV_%s_%s"%(flashggProc[p],options.mass,catinlist[cats.index(c)],syst), "%s_%d_13TeV_%s_%s"%(flashggProc[p],options.mass,c,syst), cfbdt[cats.index(c)], cfbdt[cats.index(c)+1])
+          dataDOWN =  inWS.data("%s_%d_13TeV_%s_%sDown01sigma"%(flashggProc[p],options.mass,catinlist[cats.index(c)],syst), "%s_%d_13TeV_%s_%sDown01sigma"%(flashggProc[p],options.mass,c,syst), cfbdt[cats.index(c)], cfbdt[cats.index(c)+1])
+          dataNOMINAL =  inWS.data("%s_%d_13TeV_%s"%(flashggProc[p],options.mass,catinlist[cats.index(c)]), "%s_%d_13TeV_%s"%(flashggProc[p],options.mass,c), cfbdt[cats.index(c)], cfbdt[cats.index(c)+1])
           mass = inWS.var("CMS_hgg_mass")
-          dataUP =  inWS.data("%s_%d_13TeV_%s_%sUp01sigma"%(flashggProc[p],options.mass,c,syst))
+          dataUP =  inWS.data("%s_%d_13TeV_%s_%sUp01sigma"%(flashggProc[p],options.mass,catinlist[cats.index(c)],syst),"%s_%d_13TeV_%s_%sUp01sigma"%(flashggProc[p],options.mass,c,syst), cfbdt[cats.index(c)], cfbdt[cats.index(c)+1])
           
           if (data==None):
             if( (dataUP==None) or  (dataDOWN==None)) :
@@ -1303,10 +1409,11 @@ def printVbfSysts():
         sumNOMINAL=0
         sumDOWN=0
         for c in cats:
-          data =  inWS.data("%s_%d_13TeV_%s_%s"%(flashggProc[p],options.mass,c,syst))
-          dataDOWN =  inWS.data("%s_%d_13TeV_%s_%sDown01sigma"%(flashggProc[p],options.mass,c,syst))
-          dataNOMINAL =  inWS.data("%s_%d_13TeV_%s"%(flashggProc[p],options.mass,c))
-          dataUP =  inWS.data("%s_%d_13TeV_%s_%sUp01sigma"%(flashggProc[p],options.mass,c,syst))
+
+          data =  inWS.data("%s_%d_13TeV_%s_%s"%(flashggProc[p],options.mass,catinlist[cats.index(c)],syst),"%s_%d_13TeV_%s_%s"%(flashggProc[p],options.mass,c,syst), cfbdt[cats.index(c)], cfbdt[cats.index(c)+1])
+          dataDOWN =  inWS.data("%s_%d_13TeV_%s_%sDown01sigma"%(flashggProc[p],options.mass,catinlist[cats.index(c)],syst),"%s_%d_13TeV_%s_%sDown01sigma"%(flashggProc[p],options.mass,c,syst), cfbdt[cats.index(c)], cfbdt[cats.index(c)+1])
+          dataNOMINAL =  inWS.data("%s_%d_13TeV_%s"%(flashggProc[p],options.mass,catinlist[cats.index(c)]),"%s_%d_13TeV_%s"%(flashggProc[p],options.mass,c), cfbdt[cats.index(c)], cfbdt[cats.index(c)+1])
+          dataUP =  inWS.data("%s_%d_13TeV_%s_%sUp01sigma"%(flashggProc[p],options.mass,catinlist[cats.index(c)],syst),"%s_%d_13TeV_%s_%sUp01sigma"%(flashggProc[p],options.mass,c,syst), cfbdt[cats.index(c)], cfbdt[cats.index(c)+1])
           if (asymweight): 
             [DOWN,NOMINAL,UP] = getReweightedDataset(dataNOMINAL,syst)
             sumUP += UP.sumEntries()
@@ -1482,10 +1589,12 @@ if (len(tthCats) > 0 ):  printTTHSysts()
 printTheorySysts()
 # lnN systematics
 printFlashggSysts()
-printUEPSSyst()
+#printUEPSSyst()
 #catgeory migrations
 #if (len(dijetCats) > 0 and len(tthCats)>0):  printVbfSysts()
-if (len(dijetCats) > 0 ):  printVbfSysts()
+
+#if (len(dijetCats) > 0 ):  printVbfSysts()
+
 #other 
 #printLepSysts() #obsolete
 
