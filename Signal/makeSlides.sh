@@ -23,8 +23,8 @@ sed -i -e "s/!TITLE!/$r/g" $pwd0/$EXT/sigfit/slides/slide_${p}.tex
 
 done < tmp.txt
 
-echo "cat  $pwd0/$EXT/sigfit/slides/Intro.tex $pwd0/$EXT/sigfit/slides/slide*{ggh,vbf,tth,wh,zh}*tex  $pwd0/$EXT/sigfit/slides/Outro.tex > $pwd0/$EXT/sigfit/slides/fullslides.tex"
-cat  $pwd0/$EXT/sigfit/slides/Intro.tex $pwd0/$EXT/sigfit/slides/slide*{ggh,vbf,tth,wh,zh}*tex  $pwd0/$EXT/sigfit/slides/Outro.tex > $pwd0/$EXT/sigfit/slides/fullslides.tex
+echo "cat  $pwd0/$EXT/sigfit/slides/Intro.tex $pwd0/$EXT/sigfit/slides/slide*{GG2H_VBFTOPO_JET3VETO,GG2H_VBFTOPO_JET3}*tex  $pwd0/$EXT/sigfit/slides/Outro.tex > $pwd0/$EXT/sigfit/slides/fullslides.tex"
+cat  $pwd0/$EXT/sigfit/slides/Intro.tex $pwd0/$EXT/sigfit/slides/slide*{GG2H_VBFTOPO_JET3VETO,GG2H_VBFTOPO_JET3}*tex  $pwd0/$EXT/sigfit/slides/Outro.tex > $pwd0/$EXT/sigfit/slides/fullslides.tex
 
 
 cd -

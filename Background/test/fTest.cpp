@@ -31,11 +31,12 @@
 #include "TH1I.h"
 #include "TArrow.h"
 #include "TKey.h"
-
+ 
 #include "RooCategory.h"
 #include "HiggsAnalysis/CombinedLimit/interface/RooMultiPdf.h"
 
 #include "../interface/PdfModelBuilder.h"
+#include "../interface/WSTFileWrapper.h"
 #include <Math/PdfFuncMathCore.h>
 #include <Math/ProbFunc.h>
 #include <iomanip>
@@ -58,6 +59,9 @@ bool runFtestCheckWithToys=false;
 int mgg_low =100;
 int mgg_high =180;
 int nBinsForMass = 4*(mgg_high-mgg_low);
+// int bdt_low =0.2;
+// int bdt_high =1.0;
+// int nBinsForBDT=4;
 
 RooRealVar *intLumi_ = new RooRealVar("IntLumi","hacked int lumi", 1000.);
 
@@ -363,7 +367,7 @@ void plot(RooRealVar *mass, RooMultiPdf *pdfs, RooCategory *catIndex, RooDataSet
   TCanvas *canv = new TCanvas();
   ///start extra bit for ratio plot///
   RooHist *plotdata = (RooHist*)plot->getObject(plot->numItems()-1);
-  bool doRatioPlot_=1;
+  // bool doRatioPlot_=1;
   TPad *pad1 = new TPad("pad1","pad1",0,0.25,1,1);
   TPad *pad2 = new TPad("pad2","pad2",0,0,1,0.35);
   pad1->SetBottomMargin(0.18);
@@ -404,13 +408,15 @@ void plot(RooRealVar *mass, RooMultiPdf *pdfs, RooCategory *catIndex, RooDataSet
   leg->Draw("same");
   CMS_lumi( canv, 0, 0);
   ///start extra bit for ratio plot///
-  TH1D *hbplottmp = (TH1D*) pdf->createHistogram("hbplottmp",*mass,Binning(mgg_high-mgg_low,mgg_low,mgg_high));
+  TH1D *hbplottmp = (TH1D*) pdf->createHistogram(Form("hbplottmp%s",name.c_str()),*mass,Binning(mgg_high-mgg_low,mgg_low,mgg_high));
   hbplottmp->Scale(plotdata->Integral());
+  hbplottmp->GetXaxis()->SetLabelSize(0.000004);
   hbplottmp->Draw("same");
   int npoints = plotdata->GetN();
   double xtmp,ytmp;//
   int point =0;
   TGraphAsymmErrors *hdatasub = new TGraphAsymmErrors(npoints);
+  hdatasub->GetXaxis()->SetLabelSize(0.000004);
   //hdatasub->SetMarkerSize(defmarkersize);
   for (int ipoint=0; ipoint<npoints; ++ipoint) {
   //double bkgval = hbplottmp->GetBinContent(ipoint+1);
@@ -432,13 +438,16 @@ void plot(RooRealVar *mass, RooMultiPdf *pdfs, RooCategory *catIndex, RooDataSet
  point++;
   } 
   pad2->cd();
-  TH1 *hdummy = new TH1D("hdummyweight","",mgg_high-mgg_low,mgg_low,mgg_high);
+  TH1 *hdummy = new TH1D(Form("hdummyweight%s",name.c_str()),Form("hdummyweight%s",name.c_str()),mgg_high-mgg_low,mgg_low,mgg_high);
   hdummy->SetMaximum(hdatasub->GetHistogram()->GetMaximum()+1);
   hdummy->SetMinimum(hdatasub->GetHistogram()->GetMinimum()-1);
   hdummy->GetYaxis()->SetTitle("data - best fit PDF");
   hdummy->GetYaxis()->SetTitleSize(0.12);
   hdummy->GetXaxis()->SetTitle("m_{#gamma#gamma} (GeV)");
   hdummy->GetXaxis()->SetTitleSize(0.12);
+  hdummy->GetXaxis()->SetTitleOffset(0.9);
+  hdummy->GetXaxis()->SetLabelSize(0.08);
+  hdummy->GetYaxis()->SetLabelSize(0.08);
   hdummy->Draw("HIST");
   hdummy->GetYaxis()->SetNdivisions(808);
 
@@ -453,6 +462,7 @@ void plot(RooRealVar *mass, RooMultiPdf *pdfs, RooCategory *catIndex, RooDataSet
   canv->SaveAs(Form("%s.png",name.c_str()));
   catIndex->setIndex(currentIndex);
   delete canv;
+  // hdummy->Reset();
 }
 
 void plot(RooRealVar *mass, map<string,RooAbsPdf*> pdfs, RooDataSet *data, string name, vector<string> flashggCats_, int cat, int bestFitPdf=-1){
@@ -591,6 +601,40 @@ int getBestFitFunction(RooMultiPdf *bkg, RooDataSet *data, RooCategory *cat, boo
 	return best_index;
 }
 
+//took that from Signal
+RooDataSet * reduceDataset(RooDataSet *data0, string catname, string catlow, string cathigh, float factor){
+
+  string thename = data0->GetName() + catname;
+
+  //--------------------
+  //This is only for taking the bkg shape from all statistics. See notes. 
+  //Not used commented out. 
+  // RooRealVar *weight0 = new RooRealVar("weight","weight",-100000,1000000);
+  //--------------------
+
+  RooDataSet *datasetReduced = (RooDataSet*) data0->emptyClone( thename.c_str(), thename.c_str());
+  std::cout << data0->GetName()  << std::endl;
+
+  //RooDataSet *data = (RooDataSet*) data0->emptyClone()->reduce(RooArgSet(*mass_, *dijet_mva_));
+
+  for (int i=0 ; i < data0->numEntries() ; i++){
+      float dm = data0->get(i)->getRealValue("dijet_mva");
+    
+      if ( dm < std::stof(cathigh) && dm >= std::stof(catlow) ){
+	//This is only for taking the bkg shape from all statistics. See notes. 
+	//Instead of using data0->weight() I use 1.0. 
+      // if ( dm < 1.0 && dm >= 0.2 ){
+      // 	weight0->setVal(factor * 1.0 );
+      // 	datasetReduced->add(*(data0->get(i)),  weight0->getVal() );
+	//--------------------
+	datasetReduced->add(*(data0->get(i)),1.0);
+
+	//data->add( RooArgList(*mass_,  *dijet_mva_), 1.0 );
+      }
+  }
+  return datasetReduced;
+}
+
 int main(int argc, char* argv[]){
  
   setTDRStyle();
@@ -610,9 +654,14 @@ int main(int argc, char* argv[]){
   bool verbose=false;
   bool saveMultiPdf=false;
 	int isFlashgg_ =1;
-string flashggCatsStr_;
-vector<string> flashggCats_;
- bool isData_ =0;
+  string flashggCatsStr_;
+  string flashggCatsStrIn_;
+  string cutforBDTStr_;				
+  vector<string> cutforBDT_;
+  vector<string> filenames;
+  vector<string> flashggCats_;
+  vector<string> flashggCatsIn_;
+  bool isData_ =0;
 
   po::options_description desc("Allowed options");
   desc.add_options()
@@ -630,6 +679,8 @@ vector<string> flashggCats_;
     ("isFlashgg",  po::value<int>(&isFlashgg_)->default_value(1),  								    	        "Use Flashgg output ")
     ("isData",  po::value<bool>(&isData_)->default_value(0),  								    	        "Use Data not MC ")
 		("flashggCats,f", po::value<string>(&flashggCatsStr_)->default_value("UntaggedTag_0,UntaggedTag_1,UntaggedTag_2,UntaggedTag_3,UntaggedTag_4,VBFTag_0,VBFTag_1,VBFTag_2,TTHHadronicTag,TTHLeptonicTag,VHHadronicTag,VHTightTag,VHLooseTag,VHEtTag"),       "Flashgg category names to consider")
+		("flashggCatsIn", po::value<string>(&flashggCatsStrIn_)->default_value("UntaggedTag_0,UntaggedTag_1,UntaggedTag_2,UntaggedTag_3,UntaggedTag_4,VBFTag_0,VBFTag_1,VBFTag_2,TTHHadronicTag,TTHLeptonicTag,VHHadronicTag,VHTightTag,VHLooseTag,VHEtTag"),       "Flashgg category names to consider")
+		("cutforBDT", po::value<string>(&cutforBDTStr_)->default_value("0.2,0.4,0.6,0.8,1.0"),       "The dijet_mva cut to specific bins cut")
     ("verbose,v",                                                                               "Run with more output")
   ;
   po::variables_map vm;
@@ -649,7 +700,9 @@ vector<string> flashggCats_;
     gErrorIgnoreLevel=kWarning;
   }
 	split(flashggCats_,flashggCatsStr_,boost::is_any_of(","));
-  
+	split(flashggCatsIn_,flashggCatsStrIn_,boost::is_any_of(","));
+	split(cutforBDT_,cutforBDTStr_,boost::is_any_of(","));
+
 	int startingCategory=0;
   if (singleCategory >-1){
 	ncats=singleCategory+1;	
@@ -671,20 +724,25 @@ vector<string> flashggCats_;
   }
 
   system(Form("mkdir -p %s",outDir.c_str()));
-  TFile *inFile = TFile::Open(fileName.c_str());
-  RooWorkspace *inWS;
-	if(isFlashgg_){
+  // TFile *inFile = TFile::Open(fileName.c_str());
+  // RooWorkspace *inWS;
+ // open input files using WS wrapper.
+  WSTFileWrapper *inWS;
+        if(isFlashgg_){
 		if (isData_){
-			inWS = (RooWorkspace*)inFile->Get("tagsDumper/cms_hgg_13TeV");
+			// inWS = (RooWorkspace*)inFile->Get("tagsDumper/cms_hgg_13TeV");
+		        inWS =  new WSTFileWrapper(fileName,"tagsDumper/cms_hgg_13TeV");
 		} else {
-			inWS = (RooWorkspace*)inFile->Get("cms_hgg_workspace");
+			// inWS = (RooWorkspace*)inFile->Get("cms_hgg_workspace");
+		        inWS =  new WSTFileWrapper(fileName,"cms_hgg_workspace");
 		}
 	} else {
-		inWS = (RooWorkspace*)inFile->Get("cms_hgg_workspace");//FIXME
+		// inWS = (RooWorkspace*)inFile->Get("cms_hgg_workspace");//FIXME
+		inWS =  new WSTFileWrapper(fileName,"cms_hgg_workspace");
 	}
 	if (verbose) std::cout << "[INFO]  inWS open " << inWS << std::endl;
 	if (saveMultiPdf){
-		transferMacros(inFile,outputfile);
+		// transferMacros(inFile,outputfile);
 
 		RooRealVar *intL; 
 		RooRealVar *sqrts;
@@ -733,6 +791,12 @@ vector<string> flashggCats_;
 	pdfsModel.setObsVar(mass);
 	double upperEnvThreshold = 0.1; // upper threshold on delta(chi2) to include function in envelope (looser than truth function)
 
+	RooRealVar *BDT = (RooRealVar*)inWS->var("dijet_mva");
+	std:: cout << "[INFO] Got BDT from ws " << BDT << std::endl;
+
+	RooDataSet *dataFullin;
+	dataFullin = (RooDataSet*)inWS->data(Form("Data_13TeV_%s", flashggCatsIn_[0].c_str() )); //!!! Hardcoded here !!!
+
 	fprintf(resFile,"Truth Model & d.o.f & $\\Delta NLL_{N+1}$ & $p(\\chi^{2}>\\chi^{2}_{(N\\rightarrow N+1)})$ \\\\\n");
 	fprintf(resFile,"\\hline\n");
 
@@ -745,15 +809,72 @@ vector<string> flashggCats_;
 		map<string,RooAbsPdf*> pdfs;
 		map<string,RooAbsPdf*> allPdfs;
 		string catname;
+		string catnameout;
 		if (isFlashgg_){
-			catname = Form("%s",flashggCats_[cat].c_str());
+			// catname = Form("%s",flashggCats_[cat].c_str());
+			catname = Form("%s",flashggCatsIn_[cat].c_str());
+			catnameout = Form("%s",flashggCats_[cat].c_str());
 		} else {
 			catname = Form("cat%d",cat);
 		}
-		RooDataSet *dataFull;
-		RooDataSet *dataFull0;
+		// RooDataSet *dataFullin[ncats];
+		RooDataSet * dataFull[ncats];
+		RooDataSet * dataFull0[ncats];
 		if (isData_) {
-    dataFull = (RooDataSet*)inWS->data(Form("Data_13TeV_%s",catname.c_str()));
+    // if 	(cat==startingCategory){	  
+    //dataFull = (RooDataSet*)inWS->data(Form("Data_13TeV_%s",catname.c_str()));
+    //dataFull[cat] = (RooDataSet*) dataFullin->emptyClone();
+    // dataFull[cat] =  (RooDataSet*)inWS->data(Form("Data_13TeV_%s",catname.c_str())) ;
+    //--------------------
+    //This is only for taking the bkg shape from all statistics. See notes. 
+    //Not used, it is commented out. 
+    float factor[4];
+    factor[0] = 0.0759723;
+    factor[1] = 0.235152;
+    factor[2] = 0.292433;
+    factor[3] = 0.396443;
+    //--------------------
+    std::cout << "Low value: "<< cutforBDT_[cat] << " High value: "<< cutforBDT_[cat+1] << std::endl;
+    dataFull[cat] =  reduceDataset(dataFullin, catnameout, cutforBDT_[cat], cutforBDT_[cat+1], factor[cat]);  
+    dataFull0[cat] =  reduceDataset(dataFullin, catnameout, cutforBDT_[cat], cutforBDT_[cat+1], factor[cat]);  
+   // } else{
+    //   dataFull = (RooDataSet*) dataset->emptyClone(dataset->GetName(),dataset->GetName());
+    //   dataFull = (RooDataSet*)inWS->data(Form("Data_13TeV_%s",catname.c_str()));
+
+    // }
+    //dataFull[cat] = (RooDataSet*) dataFullin->Clone( Form("Data_13TeV_%s",catnameout.c_str())   );
+    //dataFull[cat] = (RooDataSet*) dataFullin->Clone();
+    // dataFull[cat]->reduce( cutforBDT_[cat].c_str() );
+    //dataFull[cat]->reduce( RooArgSet(*mass, *BDT),"dijet_mva > 0.3") ;
+     
+
+
+    // if (cat=startingCategory){
+      // dataFull0 = new RooDataSet("dataFull0","dataFull0",&*dataFull,*(dataFull->get()),cutforBDT_[cat].c_str());
+    // dataFull0 = new RooDataSet(Form("dataFull0_%s",catnameout.c_str()),Form("dataFull0_%s",catnameout.c_str()),&*dataFull,*(dataFull->get()),cutforBDT_[cat].c_str());
+    // dataFull0[cat] = (RooDataSet*) dataFull[cat]->emptyClone();
+    // dataFull0[cat] =  new RooDataSet(Form("dataFull0_%s",catnameout.c_str()),Form("dataFull0_%s",catnameout.c_str()),&*dataFull[cat],*(dataFull[cat]->get()),cutforBDT_[cat].c_str()) ;	
+    // dataFull0.push_back( new RooDataSet(Form("dataFull0_%s",catnameout.c_str()),Form("dataFull0_%s",catnameout.c_str()),&*dataFull,*(dataFull->get()),cutforBDT_[cat].c_str()) );	
+    // RooDataSet *datasetReduced = (RooDataSet*) dataset->emptyClone(dataset->GetName(),dataset->GetName());
+    // } else {
+      // dataFull0->cleanup();
+      // dataFull0 = new RooDataSet("dataFull0","dataFull0",&*dataFull,*(dataFull->get()),cutforBDTStr_.c_str());
+    // }
+
+    // if (cat==startingCategory){
+    //   dataFull = (RooDataSet*)inWS->data(Form("Data_13TeV_%s",catname.c_str()));
+    //   dataFull0 = new RooDataSet(Form("dataFull0_%s",catnameout.c_str()),Form("dataFull0_%s",catnameout.c_str()),&*dataFull,*(dataFull->get()),cutforBDT_[cat].c_str());
+    // } else {
+    //   delete dataFull;
+    //   delete dataFull0;
+    //   std::cout << "2222" << std::endl;
+    //    dataFull = (RooDataSet*)inWS->data(Form("Data_13TeV_%s",catname.c_str()));
+    //   dataFull0 = new RooDataSet(Form("dataFull0_%s",catnameout.c_str()),Form("dataFull0_%s",catnameout.c_str()),&*dataFull,*(dataFull->get()),cutforBDT_[cat].c_str());
+    //   std::cout << "2222" << std::endl;
+   
+    // }
+
+
     /*dataFull= (RooDataSet*) dataFull0->emptyClone();
     for (int i =0 ; i < dataFull0->numEntries() ; i++){
     double m = dataFull0->get(i)->getRealValue("CMS_hgg_mass");
@@ -765,11 +886,16 @@ vector<string> flashggCats_;
     }
     dataFull->add(*dataFull0->get(),1.0);
     }*/
-		if (verbose) std::cout << "[INFO] opened data for  "  << Form("Data_%s",catname.c_str()) <<" - " << dataFull <<std::endl;
+    if (verbose){ 
+      std::cout << "[INFO] opened data for  "  << Form("Data_%s",catname.c_str()) <<" - " << dataFull[cat] <<std::endl;
+      std::cout << "[INFO] opened reduced data for  "  << Form("Data_%s",catnameout.c_str()) <<" - " << dataFull0[cat] <<std::endl;
     }
+		}
 		else 
-    {dataFull = (RooDataSet*)inWS->data(Form("data_mass_%s",catname.c_str()));
-		if (verbose) std::cout << "[INFO] opened data for  "  << Form("data_mass_%s",catname.c_str()) <<" - " << dataFull <<std::endl;
+    {
+      //dataFull = (RooDataSet*)inWS->data(Form("data_mass_%s",catname.c_str()));
+      dataFull[cat] =  (RooDataSet*)inWS->data(Form("data_mass_%s",catname.c_str())) ;
+		if (verbose) std::cout << "[INFO] opened data for  "  << Form("data_mass_%s",catname.c_str()) <<" - " << dataFull[cat] <<std::endl;
     }
 
 
@@ -790,7 +916,8 @@ vector<string> flashggCats_;
 			thisdataBinned_name= Form("roohist_data_mass_cat%d",cat);
 			//RooDataSet *data = (RooDataSet*)dataFull;
 		}
-		RooDataHist thisdataBinned(thisdataBinned_name.c_str(),"data",*mass,*dataFull);
+		//RooDataHist thisdataBinned(thisdataBinned_name.c_str(),"data",*mass,*dataFull);
+		RooDataHist thisdataBinned(thisdataBinned_name.c_str(),"data",*mass,*dataFull0[cat]);
 		data = (RooDataSet*)&thisdataBinned;
 
 		RooArgList storedPdfs("store");
@@ -963,7 +1090,8 @@ vector<string> flashggCats_;
 			std::cout << "[INFO] Simple check of index "<< simplebestFitPdfIndex <<std::endl;
 
 			mass->setBins(nBinsForMass);
-			RooDataHist dataBinned(Form("roohist_data_mass_%s",catname.c_str()),"data",*mass,*dataFull);
+			//RooDataHist dataBinned(Form("roohist_data_mass_%s",catname.c_str()),"data",*mass,*dataFull);
+			RooDataHist dataBinned(Form("roohist_data_mass_%s",catname.c_str()),"data",*mass,*dataFull0[cat]);
 
 			// Save it (also a binned version of the dataset
 			outputws->import(*pdf);
@@ -975,7 +1103,7 @@ vector<string> flashggCats_;
 
 		}
 
-		}
+	}
 		if (saveMultiPdf){
 			outputfile->cd();
 			outputws->Write();
@@ -1000,7 +1128,10 @@ vector<string> flashggCats_;
 			}
 			fprintf(dfile,"\n");
 		}
-		inFile->Close();
-
+		fclose(dfile);
+		//inFile->Close();
+		std::cout << "11111111111111111111111111" << std::endl;
+		inWS->Close();
+		std::cout << "22222222222222222222222222" << std::endl;
 		return 0;
 	}

@@ -102,6 +102,7 @@ std::pair<std::string,std::string> WSTFileWrapper::convertTemplatedName(std::str
   tpMap["testBBH"] = "bbh";
   tpMap["testTHW"] = "th";
   tpMap["testTHQ"] = "th";
+  
   for( std::map<std::string,std::string>::iterator it = tpMap.begin(); it != tpMap.end(); it++ ) {
     if( theDataName.BeginsWith(it->first) ) { 
       TString theDataNameCopy = theDataName;

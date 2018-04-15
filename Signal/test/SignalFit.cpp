@@ -91,7 +91,11 @@ bool isFlashgg_;
 bool binnedFit_;
 int  nBins_;
 string flashggCatsStr_;
+string flashggCatsStrIn_;
+string cutforBDTStr_;
 vector<string> flashggCats_;
+vector<string> cutforBDT_;
+vector<string> flashggCatsIn_;
 bool checkYields_;
 bool useMerged_;
 vector<string>  split_;
@@ -101,6 +105,13 @@ float originalIntLumi_;
 float mcBeamSpotWidth_=5.14; //cm // the beamspot has a certain width in MC which is not necessarily the same in data. for the data/MC to agree, we reweight the MC to match the data Beamspot width, using dZ as a proxy (they have a factor of sqrt(2) because you are subtracting one gaussain distributed quantity from another)
 //float dataBeamSpotWidth_=4.24; //cm
 float dataBeamSpotWidth_=3.5; //cm
+//=========================================================================
+// There is a critical point which lies in the core of this optimization work and it is the 
+// right vertex (RV) and wrong vertex (WV) replacement in the case of low statistics. 
+//Since mgg shape should be identical across all tags in WV case, we follow the group and 
+//choose the same replacement process and category. For the RV case, again we follow the 
+//group and we keep the category but replace the process with that of largest statistics. 
+//=========================================================================
 //string referenceProc_="ggh";
 //string referenceProc_="GG2H";
 string referenceProc_="GG2H_0J";
@@ -165,6 +176,8 @@ void OptionParser(int argc, char *argv[]){
       ("split", po::value<string>(&splitStr_)->default_value(""), "do just one tag,proc ")
 		("changeIntLumi",	po::value<float>(&newIntLumi_)->default_value(0),														"If you want to specify an intLumi other than the one in the file. The event weights and rooRealVar IntLumi are both changed accordingly. (Specify new intlumi in fb^{-1})")
 		("flashggCats,f", po::value<string>(&flashggCatsStr_)->default_value("UntaggedTag_0,UntaggedTag_1,UntaggedTag_2,UntaggedTag_3,UntaggedTag_4,VBFTag_0,VBFTag_1,VBFTag_2,TTHHadronicTag,TTHLeptonicTag,VHHadronicTag,VHTightTag,VHLooseTag,VHEtTag"),       "Flashgg categories if used")
+                ("flashggCatsIn", po::value<string>(&flashggCatsStrIn_)->default_value("UntaggedTag_0,UntaggedTag_1,UntaggedTag_2,UntaggedTag_3,UntaggedTag_4,VBFTag_0,VBFTag_1,VBFTag_2,TTHHadronicTag,TTHLeptonicTag,VHHadronicTag,VHTightTag,VHLooseTag,VHEtTag"),       "Flashgg category names to consider")
+                ("cutforBDT", po::value<string>(&cutforBDTStr_)->default_value("0.2,0.4,0.6,0.8,1.0"),       "The dijet_mva cut to specific bins cut")
 		;                                                                                             		
 	po::options_description desc("Allowed options");
 	desc.add(desc1);
@@ -221,6 +234,8 @@ void OptionParser(int argc, char *argv[]){
   split(procs_,procStr_,boost::is_any_of(","));
 	split(flashggCats_,flashggCatsStr_,boost::is_any_of(","));
 	split(filename_,filenameStr_,boost::is_any_of(","));
+        split(flashggCatsIn_,flashggCatsStrIn_,boost::is_any_of(","));
+        split(cutforBDT_,cutforBDTStr_,boost::is_any_of(","));
   split(split_,splitStr_,boost::is_any_of(",")); // proc,cat
 
 }
@@ -293,17 +308,42 @@ void makeCloneConfig(clonemap_t mapRV, clonemap_t mapWV, string newdatfilename){
 
 }
 
-RooDataSet * reduceDataset(RooDataSet *data0){
+// RooDataSet * reduceDataset(RooDataSet *data0){
 
-  RooDataSet *data = (RooDataSet*) data0->emptyClone()->reduce(RooArgSet(*mass_, *dZ_));
-	RooRealVar *weight0 = new RooRealVar("weight","weight",-100000,1000000);
-  for (unsigned int i=0 ; i < data0->numEntries() ; i++){
-    mass_->setVal(data0->get(i)->getRealValue("CMS_hgg_mass"));
-    weight0->setVal(data0->weight() ); // <--- is this correct?
-    dZ_->setVal(data0->get(i)->getRealValue("dZ"));
-    data->add( RooArgList(*mass_, *dZ_, *weight0), weight0->getVal() );
+//   RooDataSet *data = (RooDataSet*) data0->emptyClone()->reduce(RooArgSet(*mass_, *dZ_));
+// 	RooRealVar *weight0 = new RooRealVar("weight","weight",-100000,1000000);
+//   for (unsigned int i=0 ; i < data0->numEntries() ; i++){
+//     mass_->setVal(data0->get(i)->getRealValue("CMS_hgg_mass"));
+//     weight0->setVal(data0->weight() ); // <--- is this correct?
+//     dZ_->setVal(data0->get(i)->getRealValue("dZ"));
+//     data->add( RooArgList(*mass_, *dZ_, *weight0), weight0->getVal() );
+//     }
+// return data;
+// }
+
+RooDataSet * reduceDataset(RooDataSet *data0, string catname, string catlow, string cathigh){
+
+  string thename = catname;
+
+  RooDataSet *data = (RooDataSet*) data0->emptyClone( thename.c_str(), thename.c_str() )->reduce(RooArgSet(*mass_, *dZ_));
+  // RooDataSet *data = (RooDataSet*) data0->emptyClone( thename.c_str(), thename.c_str() );
+  std::cout << data0->GetName()  << std::endl;
+  std::cout << data->GetName()  << std::endl;
+  RooRealVar *weight0 = new RooRealVar("weight","weight",-100000,1000000);
+  for (int i=0 ; i < data0->numEntries() ; i++){
+
+    float dm = data0->get(i)->getRealValue("dijet_mva");
+
+    if ( dm < std::stof(cathigh) && dm >= std::stof(catlow) ){
+      mass_->setVal(data0->get(i)->getRealValue("CMS_hgg_mass"));
+      weight0->setVal(data0->weight() ); // <--- is this correct?
+      dZ_->setVal(data0->get(i)->getRealValue("dZ"));
+      data->add( RooArgList(*mass_, *dZ_, *weight0), weight0->getVal() );
+      // data->add( RooArgList( *(data0->get(i)), data0->weight() );
     }
-return data;
+
+  }
+  return data;
 }
 
 // this is where we reweight the DZ distribution as a proxy for the beamspot.
@@ -482,7 +522,7 @@ int main(int argc, char *argv[]){
 	//TFile *inFile = TFile::Open(filename_[0].c_str());
 
   // extract nEvents per proc/tag etc...
-  // FIXME: no need for this...
+  // FIXME: no need for this... ----> WHY???
   /*if (checkYields_){
 	  
     WSTFileWrapper * inWS0 = new WSTFileWrapper(filenameStr_,"tagsDumper/cms_hgg_13TeV");
@@ -497,6 +537,40 @@ int main(int argc, char *argv[]){
 		}
 		return 1;
 	}*/
+
+  //I will add it because I make changes here for the use of the yield table. Commented out for the moment. 
+    //     if (checkYields_){
+
+    // WSTFileWrapper * inWS0 = new WSTFileWrapper(filenameStr_,"tagsDumper/cms_hgg_13TeV");
+    //              std::list<RooAbsData*> data =  (inWS0->allData()) ;
+    //             for (std::list<RooAbsData*>::const_iterator iterator = data.begin(), end = data.end();
+    //   iterator != end;
+    //   ++iterator) {
+    //    RooDataSet *data0 = dynamic_cast<RooDataSet *>( *iterator );
+    //     if (data0) {
+    //     string theinitnameVBFTag0 = data0->GetName();
+
+    //     std::size_t pdfpos = theinitnameVBFTag0.find( "pdfWeights" );
+    //     if ( pdfpos != string::npos) {continue;}
+    //             string cutl= "dijet_mva>" + cutforBDT_[0] + "&&dijet_mva<=" + cutforBDT_[1];
+    //             // std::cout <<  dataset0->GetName() << "," << dataset0->sumEntries() << std::endl;
+    //             std::cout <<  data0->GetName() << "_0," << data0->sumEntries(cutl.c_str()) << std::endl;
+    //             cutl= "dijet_mva>" + cutforBDT_[1] + "&&dijet_mva<=" + cutforBDT_[2];
+    //             //std::cout <<  dataset1->GetName() << "," << dataset1->sumEntries() << std::endl;
+    //             std::cout <<  data0->GetName() << "_1," << data0->sumEntries(cutl.c_str()) << std::endl;
+    //             cutl= "dijet_mva>" + cutforBDT_[2] + "&&dijet_mva<=" + cutforBDT_[3];
+    //             //std::cout <<  dataset2->GetName() << "," << dataset2->sumEntries() << std::endl;
+    //             std::cout <<  data0->GetName() << "_2," << data0->sumEntries(cutl.c_str()) << std::endl;
+    //             cutl= "dijet_mva>" + cutforBDT_[3] + "&&dijet_mva<=" + cutforBDT_[4];
+    //             //std::cout <<  dataset3->GetName() << "," << dataset3->sumEntries() << std::endl;
+    //             std::cout <<  data0->GetName() << "_3," << data0->sumEntries(cutl.c_str()) << std::endl;
+    //     }
+
+    //             }
+    //             return 1;
+    //     }
+
+
 
   //time to open the signal file for the main script!
 	WSTFileWrapper *inWS;
@@ -607,7 +681,9 @@ int main(int argc, char *argv[]){
       }
     }
   } else {
-    if (verbose_) std::cout << "[INFO] openign dat file "<< datfile<< std::endl;
+    //if (verbose_) {std::cout << "[INFO] openign dat file " << datfile << std::endl;}
+    // std::cout << "[INFO] preparing outfile "<< outfilename_<< std::endl;    
+    // if (verbose_) {std::cout << "[INFO] openign dat file " << datfile.rdbuf(); << std::endl;}
     //loop over it 
 	  while (datfile.good()){
 		  string line;
@@ -732,7 +808,23 @@ int main(int argc, char *argv[]){
       RooDataHist *dataH;  
 
         if (verbose_)std::cout << "[INFO] Opening dataset called "<< Form("%s_%d_13TeV_%s",proc.c_str(),mh,cat.c_str()) << " in in WS " << inWS << std::endl;
-        RooDataSet *data0   = reduceDataset((RooDataSet*)inWS->data(Form("%d%s",mh,proc.c_str()), Form("%s_%d_13TeV_%s",proc.c_str(),mh,cat.c_str())));
+        // RooDataSet *data0   = reduceDataset((RooDataSet*)inWS->data(Form("%d%s",mh,proc.c_str()), Form("%s_%d_13TeV_%s",proc.c_str(),mh,cat.c_str())));
+
+	std::size_t foundcat = cat.find_last_of('_');
+	int bdtregion = 0;
+	RooDataSet *data0;
+	//Check if we are on the category we wish to optimize
+	if ( flashggCatsIn_[0] == cat.substr(0,foundcat)   ){
+	  bdtregion = std::stoi( cat.substr(foundcat+1) );
+	  
+	  RooDataSet *dataFullin   = (RooDataSet*)inWS->data(Form("%s_%d_13TeV_%s",proc.c_str(),mh,flashggCatsIn_[0].c_str()));
+
+	  data0 =  reduceDataset(dataFullin, Form("%s_%d_13TeV_%s",proc.c_str(),mh,cat.c_str()) , cutforBDT_[bdtregion], cutforBDT_[bdtregion+1]);
+
+	} else {
+	  data0   = reduceDataset((RooDataSet*)inWS->data(Form("%d%s",mh,proc.c_str()), Form("%s_%d_13TeV_%s",proc.c_str(),mh,cat.c_str())), Form("%s_%d_13TeV_%s",proc.c_str(),mh,cat.c_str()) , cutforBDT_[0], cutforBDT_[ cutforBDT_.size() - 1  ] );
+	}
+
 				if (beamSpotReweigh_){
         data = beamSpotReweigh(intLumiReweigh(data0));
 				} else {
@@ -774,9 +866,9 @@ int main(int argc, char *argv[]){
           data0Ref   = beamSpotReweigh(
 													rvwvDataset(
                         		intLumiReweigh(
-                          		reduceDataset(
-                          			(RooDataSet*)inWS->data(Form("%d%s",mh,replancementProc.c_str()), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str()))
-                              )
+                          		// reduceDataset(
+                          		// 	(RooDataSet*)inWS->data(Form("%d%s",mh,replancementProc.c_str()), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str()))
+						       reduceDataset( (RooDataSet*)inWS->data(Form("%d%s",mh,replancementProc.c_str()), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str())), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str()) , cutforBDT_[0], cutforBDT_[ cutforBDT_.size() -1 ] )                             
                             ), "RV"
                           )
 											 );
@@ -784,9 +876,9 @@ int main(int argc, char *argv[]){
 					} else {
           data0Ref   = rvwvDataset(
                         intLumiReweigh(
-                          reduceDataset(
-                          (RooDataSet*)inWS->data(Form("%d%s",mh,replancementProc.c_str()), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str()))
-                         )
+                          // reduceDataset(
+                          // (RooDataSet*)inWS->data(Form("%d%s",mh,replancementProc.c_str()), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str()))
+				       reduceDataset( (RooDataSet*)inWS->data(Form("%d%s",mh,replancementProc.c_str()), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str())), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str()) , cutforBDT_[0], cutforBDT_[ cutforBDT_.size() -1 ] )                       
                        ), "RV"
                       );
 					}
@@ -799,7 +891,7 @@ int main(int argc, char *argv[]){
 
           dataRVRef=(RooDataSet*) data0Ref->Clone();
           std::cout << "[INFO] RV: replacing dataset for FITTING with new one ("<< *dataRVRef <<"), but keeping name of "<< *data0 << std::endl;
-        //  dataRVRef->SetName(data0->GetName());
+         dataRVRef->SetName(data0->GetName());
         } else { // if the dataset was fine to begin with, make the reference dataset the original
           dataRVRef=(RooDataSet*) dataRV->Clone();
         }
@@ -819,27 +911,29 @@ int main(int argc, char *argv[]){
           string replancementCat = map_replacement_cat_WV_[thisProcCatIndex];
           int replacementIndex = getIndexOfReferenceDataset(replancementProc,replancementCat);
           nGaussiansWV= map_nG_wv_[replacementIndex]; 
-        
+	  std::cout << "LC DEBUG (WV) " << proc <<  " "<< cat << " thisProcCatIndex " << thisProcCatIndex << " replancementProc " << replancementProc << " replancementCat " << replancementCat << " replacementIndex " << std::endl;
+
+
          //pick the dataset for the replacement proc and cat, reduce it (ie remove pdfWeights etc) ,
          //reweight for lumi and then get the WV events only.
 				 if (beamSpotReweigh_){
          data0Ref   = beamSpotReweigh( 
 				               rvwvDataset(
                         intLumiReweigh(
-                          reduceDataset(
+                          // reduceDataset(
                           //(RooDataSet*)inWS->data(Form("%s_%d_13TeV_%s",referenceProcWV_.c_str(),mh,referenceTagWV_.c_str()))
-                            (RooDataSet*)inWS->data(Form("%d%s",mh,replancementProc.c_str()), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str()))
-                         )
+                            // (RooDataSet*)inWS->data(Form("%d%s",mh,replancementProc.c_str()), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str()))
+						       reduceDataset( (RooDataSet*)inWS->data(Form("%d%s",mh,replancementProc.c_str()), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str())), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str()) , cutforBDT_[0], cutforBDT_[ cutforBDT_.size() -1 ] )                         
                        ), "WV"
                       )
 										);
 				 } else {
          data0Ref   = rvwvDataset(
                         intLumiReweigh(
-                          reduceDataset(
+                          // reduceDataset(
                           //(RooDataSet*)inWS->data(Form("%s_%d_13TeV_%s",referenceProcWV_.c_str(),mh,referenceTagWV_.c_str()))
-                          	(RooDataSet*)inWS->data(Form("%d%s",mh,replancementProc.c_str()), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str()))
-                         )
+                          	// (RooDataSet*)inWS->data(Form("%d%s",mh,replancementProc.c_str()), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str()))
+						       reduceDataset( (RooDataSet*)inWS->data(Form("%d%s",mh,replancementProc.c_str()), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str())), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str()) , cutforBDT_[0], cutforBDT_[ cutforBDT_.size() -1 ] )                         
                        ), "WV"
                       );
 					}
@@ -852,7 +946,7 @@ int main(int argc, char *argv[]){
 
           dataWVRef = (RooDataSet*) data0Ref->Clone();
           std::cout << "[INFO] WV: replacing dataset for FITTING with new one ("<< *dataWVRef <<"), but keeping name of "<< *data0 << std::endl;
-         // dataWVRef->SetName(data0->GetName());
+         dataWVRef->SetName(data0->GetName());
         } else {
           dataWVRef=(RooDataSet*) dataWV->Clone();
         }

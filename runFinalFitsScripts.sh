@@ -30,7 +30,8 @@ UNBLIND=0
 ISDATA=0
 BS=0
 VERBOSE=0
-BATCH="LSF"
+#BATCH="LSF"
+BATCH=""
 DEFAULTQUEUE="1nh"
 UEPS="none"
 NEWGGHSCHEME=0
@@ -70,7 +71,7 @@ echo "--batch) which batch system to use (LSF,IC) (default $BATCH)) "
 
 
 # options may be followed by one colon to indicate they have a required argument
-if ! options=$(getopt -u -o hi:p:f: -l help,inputFile:,procs:,bs:,flashggCats:,uepsFile:,newGghScheme,doSTXS,ext:,smears:,massList:,scales:,scalesCorr:,scalesGlobal:,,pseudoDataDat:,sigFile:,combine,combineOnly,combinePlotsOnly,signalOnly,backgroundOnly,datacardOnly,useSSF:,useDCB_1G:,continueLoop:,intLumi:,unblind,isData,isFakeData,dataFile:,batch:,verbose -- "$@")
+if ! options=$(getopt -u -o hi:p:f: -l help,inputFile:,procs:,bs:,flashggCats:,flashggCatsIn:,cutforBDT:,uepsFile:,newGghScheme,doSTXS,ext:,smears:,massList:,scales:,scalesCorr:,scalesGlobal:,,pseudoDataDat:,sigFile:,combine,combineOnly,combinePlotsOnly,signalOnly,backgroundOnly,datacardOnly,useSSF:,useDCB_1G:,continueLoop:,intLumi:,unblind,isData,isFakeData,dataFile:,batch:,verbose -- "$@")
 then
 # something went wrong, getopt will put out an error message for us
 exit 1
@@ -89,6 +90,8 @@ case $1 in
 --smears) SMEARS=$2; shift ;;
 --massList) MASSLIST=$2; shift ;;
 -f|--flashggCats) CATS=$2; shift ;;
+--flashggCatsIn) FLASHGGCATSIN=$2; shift ;;
+--cutforBDT) CUTFORBDT=$2; shift ;;
 --uepsFile) UEPS=$2; shift ;;
 --newGghScheme) NEWGGHSCHEME=1;;
 --doSTXS) DOSTXS=1;;
@@ -184,8 +187,8 @@ fi
 SIGFILES=$PWD/Signal/$OUTDIR/CMS-HGG_sigfit_${EXT}.root
 
 cd Background
-echo "./runBackgroundScripts.sh -p $PROCS -f $CATS --ext $EXT --sigFile $SIGFILES --seed $COUNTER --intLumi $INTLUMI $BLINDINGOPT $PSEUDODATAOPT $DATAOPT $DATAFILEOPT $BATCHOPTION "
-./runBackgroundScripts.sh -p $PROCS -f $CATS --ext $EXT --sigFile $SIGFILES --seed $COUNTER --intLumi $INTLUMI $BLINDINGOPT $PSEUDODATAOPT $DATAOPT $DATAFILEOPT $BATCHOPTION
+echo "./runBackgroundScripts.sh -p $PROCS -f $CATS --flashggCatsIn $FLASHGGCATSIN --cutforBDT $CUTFORBDT --ext $EXT --sigFile $SIGFILES --seed $COUNTER --intLumi $INTLUMI $BLINDINGOPT $PSEUDODATAOPT $DATAOPT $DATAFILEOPT $BATCHOPTION "
+./runBackgroundScripts.sh -p $PROCS -f $CATS --flashggCatsIn $FLASHGGCATSIN --cutforBDT $CUTFORBDT --ext $EXT --sigFile $SIGFILES --seed $COUNTER --intLumi $INTLUMI $BLINDINGOPT $PSEUDODATAOPT $DATAOPT $DATAFILEOPT $BATCHOPTION
 
 cd -
 if [ $USER == lcorpe ]; then
@@ -205,8 +208,8 @@ echo "------------------------------------------------"
 
 cd Datacard
 if [ $DOSTAGE1 == 1 ]; then
-  echo "./makeStage1Datacard.py -i $FILE  -o Datacard_13TeV_${EXT}.txt -p $PROCS -c $CATS --photonCatScales $SCALES --photonCatSmears $SMEARS --isMultiPdf --mass 125 --theoryNormFactors norm_factors.py --intLumi $INTLUMI --uepsfilename $UEPS --newGghScheme --doSTXS"
-  ./makeStage1Datacard.py -i $FILE  -o Datacard_13TeV_${EXT}.txt -p $PROCS -c $CATS --photonCatScales $SCALES --photonCatSmears $SMEARS --isMultiPdf --mass 125 --intLumi $INTLUMI --uepsfilename $UEPS --newGghScheme --doSTXS
+  echo "./makeStage1Datacard.py -i $FILE  -o Datacard_13TeV_${EXT}.txt -p $PROCS -c $CATS --photonCatScales $SCALES --photonCatSmears $SMEARS --isMultiPdf --mass 125 --theoryNormFactors norm_factors.py --intLumi $INTLUMI --uepsfilename $UEPS --catsin $FLASHGGCATSIN --cutforBDT $CUTFORBDT --newGghScheme --doSTXS"
+  ./makeStage1Datacard.py -i $FILE  -o Datacard_13TeV_${EXT}.txt -p $PROCS -c $CATS --photonCatScales $SCALES --photonCatSmears $SMEARS --isMultiPdf --mass 125 --intLumi $INTLUMI --uepsfilename $UEPS --catsin $FLASHGGCATSIN --cutforBDT $CUTFORBDT --newGghScheme --doSTXS
 else
   if [ $NEWGGHSCHEME == 1 ] && [ $DOSTXS == 1 ]; then
   echo "./makeParametricModelDatacardFLASHgg.py -i $FILE  -o Datacard_13TeV_${EXT}.txt -p $PROCS -c $CATS --photonCatScales $SCALES --photonCatSmears $SMEARS --isMultiPdf --mass 125 --theoryNormFactors norm_factors.py --intLumi $INTLUMI --uepsfilename $UEPS --newGghScheme --doSTXS"
@@ -283,7 +286,7 @@ echo "./combineHarvester.py -d combineHarvesterOptions13TeV_$EXT.dat -q $DEFAULT
 #./combineHarvester.py -d combineHarvesterOptions13TeV_${EXT}${FAKE}.dat -q $DEFAULTQUEUE --batch $BATCH --verbose --dryRun
 
 JOBS=999
-RUN=999
+RUN=-1
 PEND=999
 FAIL=999
 DONE=999

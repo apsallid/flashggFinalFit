@@ -43,7 +43,7 @@ echo "--unblind) specified in fb^-{1} (default $UNBLIND)) "
 
 
 # options may be followed by one colon to indicate they have a required argument
-if ! options=$(getopt -u -o hi:p:f: -l help,inputFile:,procs:,flashggCats:,ext:,fTestOnly,pseudoDataOnly,bkgPlotsOnly,pseudoDataDat:,sigFile:,seed:,intLumi:,unblind,isData,batch: -- "$@")
+if ! options=$(getopt -u -o hi:p:f: -l help,inputFile:,procs:,flashggCats:,flashggCatsIn:,cutforBDT:,,ext:,fTestOnly,pseudoDataOnly,bkgPlotsOnly,pseudoDataDat:,sigFile:,seed:,intLumi:,unblind,isData,batch: -- "$@")
 then
 # something went wrong, getopt will put out an error message for us
 exit 1
@@ -57,6 +57,8 @@ case $1 in
 -i|--inputFile) FILE=$2; shift ;;
 -p|--procs) PROCS=$2; shift ;;
 -f|--flashggCats) CATS=$2; shift ;;
+--flashggCatsIn) FLASHGGCATSIN=$2; shift ;;
+--cutforBDT) CUTFORBDT=$2; shift ;;
 --ext) EXT=$2; echo "test" ; shift ;;
 --fTestOnly) FTESTONLY=1; echo "ftest" ;;
 --pseudoDataOnly) PSEUDODATAONLY=1;;
@@ -144,8 +146,8 @@ if [ $ISDATA == 1 ]; then
 OPT=" --isData 1"
 fi
 
-echo " ./bin/fTest -i $FILE --saveMultiPdf CMS-HGG_multipdf_$EXT.root  -D $OUTDIR/bkgfTest$DATAEXT -f $CATS $OPT"
-./bin/fTest -i $FILE --saveMultiPdf CMS-HGG_multipdf_$EXT.root  -D $OUTDIR/bkgfTest$DATAEXT -f $CATS $OPT
+echo " ./bin/fTest -i $FILE --saveMultiPdf CMS-HGG_multipdf_$EXT.root  -D $OUTDIR/bkgfTest$DATAEXT -f $CATS --flashggCatsIn $FLASHGGCATSIN --cutforBDT $CUTFORBDT $OPT"
+./bin/fTest -i $FILE --saveMultiPdf CMS-HGG_multipdf_$EXT.root  -D $OUTDIR/bkgfTest$DATAEXT -f $CATS --flashggCatsIn $FLASHGGCATSIN --cutforBDT $CUTFORBDT $OPT
 
 OPT=""
 fi
@@ -165,20 +167,28 @@ fi
 if [ $UNBLIND == 1 ]; then
 OPT=" --unblind"
 fi
-echo "./scripts/subBkgPlots.py -b CMS-HGG_multipdf_$EXT.root -d $OUTDIR/bkgPlots$DATAEXT -S 13 --isMultiPdf --useBinnedData  --doBands --massStep 1 $SIG -L 100 -H 180 -f $CATS -l $CATS --intLumi $INTLUMI $OPT --batch $BATCH -q $DEFAULTQUEUE "
-./scripts/subBkgPlots.py -b CMS-HGG_multipdf_$EXT.root -d $OUTDIR/bkgPlots$DATAEXT -S 13 --isMultiPdf --useBinnedData  --doBands  --massStep 1 $SIG -L 100 -H 180 -f $CATS -l $CATS --intLumi $INTLUMI $OPT --batch $BATCH -q $DEFAULTQUEUE
-continueLoop=1
-while (($continueLoop==1))
+
+for ct in `echo $CATS | tr "," "\n" `
 do
- sleep 10
- $BATCHQUERY
- $BATCHQUERY >qstat_out.txt
- ((number=`cat qstat_out.txt | wc -l `))
- echo $number
-  if (($number==0)) ; then
-     ((continueLoop=0))
-  fi
-done 
+echo "=========================================================================================="
+echo "./bin/makeBkgPlots -f $ct -l $ct --intLumi $INTLUMI $OPT -b CMS-HGG_multipdf_$EXT.root -d $OUTDIR/bkgPlots$DATAEXT -S 13 --isMultiPdf --useBinnedData  --doBands -c 0 --massStep 1.000 --nllTolerance 0.050 -L 100 -H 180 -o tmp_STXS_stage1.root"
+./bin/makeBkgPlots -f $ct -l $ct --intLumi $INTLUMI $OPT -b CMS-HGG_multipdf_$EXT.root -d $OUTDIR/bkgPlots$DATAEXT -S 13 --isMultiPdf --useBinnedData  --doBands -c 0 --massStep 1.000 --nllTolerance 0.050 -L 100 -H 180 -o tmp_STXS_stage1.root
+done
+
+#echo "./scripts/subBkgPlots.py -b CMS-HGG_multipdf_$EXT.root -d $OUTDIR/bkgPlots$DATAEXT -S 13 --isMultiPdf --useBinnedData  --doBands --massStep 1 $SIG -L 100 -H 180 -f $CATS -l $CATS --intLumi $INTLUMI $OPT --batch $BATCH -q $DEFAULTQUEUE "
+#./scripts/subBkgPlots.py -b CMS-HGG_multipdf_$EXT.root -d $OUTDIR/bkgPlots$DATAEXT -S 13 --isMultiPdf --useBinnedData  --doBands  --massStep 1 $SIG -L 100 -H 180 -f $CATS -l $CATS --intLumi $INTLUMI $OPT --batch $BATCH -q $DEFAULTQUEUE
+#continueLoop=1
+#while (($continueLoop==1))
+#do
+# sleep 10
+# $BATCHQUERY
+# $BATCHQUERY >qstat_out.txt
+# ((number=`cat qstat_out.txt | wc -l `))
+# echo $number
+#  if (($number==0)) ; then
+#     ((continueLoop=0))
+#  fi
+#done 
 
 OPT=""
 fi

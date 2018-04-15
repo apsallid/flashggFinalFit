@@ -23,7 +23,8 @@ int Normalization_13TeV::Init(int sqrtS){
     }
     TPython::Eval(Form("buildSMHiggsSignalXSBR.Init%dTeV()", sqrtS));
     
-    for (double mH=120;mH<=135.0;mH+=0.1){ // Do we need this up to 250 ?
+    // for (double mH=120;mH<=135.0;mH+=0.1){ // Do we need this up to 250 ?
+    for (double mH=120;mH<=130.0;mH+=0.1){ // Do we need this up to 250 ?
 	double valBR           = (double)TPython::Eval(Form("buildSMHiggsSignalXSBR.getBR(%f)",mH));
 	double valXSggH        = (double)TPython::Eval(Form("buildSMHiggsSignalXSBR.getXS(%f,'%s')",mH,"ggH"));
 	double valXSqqH        = (double)TPython::Eval(Form("buildSMHiggsSignalXSBR.getXS(%f,'%s')",mH,"qqH"));
@@ -38,6 +39,8 @@ int Normalization_13TeV::Init(int sqrtS){
         double valXSZH2HQQ     = valXSZH*(69.91*0.01)/*BR(Z to hadrons)*/;	
         double valXSTHQ        = 0.074;
         double valXSTHW        = 0.015;
+
+	// std::cout << "========>>>>>>>>> "<< mH << " " << valBR << std::endl;
 
 	BranchingRatioMap[mH]	= valBR;
         XSectionMap_ggh[mH]	= valXSggH; 	
@@ -236,10 +239,13 @@ double Normalization_13TeV::GetBR(double mass) {
 	for (std::map<double, double>::const_iterator iter = BranchingRatioMap.begin();  iter != BranchingRatioMap.end(); ++iter) {
 		if (mass==iter->first) return iter->second;
 		if (mass>iter->first) {
+		 std::cout << "------------>>>>>>> " << mass << " "<< iter->first << std::endl;
+		 std::cout << "1111111111111111111111" << std::endl;
 			double lowmass = iter->first;
 			double lowbr = iter->second;
 			++iter;
 			if (mass<iter->first) {
+			  std::cout << "222222222222222222222" << std::endl;
 				double highmass = iter->first;
 				double highbr = iter->second;
 				double br = (highbr-lowbr)/(highmass-lowmass)*(mass-lowmass)+lowbr;
@@ -367,12 +373,15 @@ double Normalization_13TeV::GetXsection(double mass, TString HistName) {
 	}
 
 	for (std::map<double, double>::const_iterator iter = XSectionMap->begin();  iter != XSectionMap->end(); ++iter) {
-		if (mass==iter->first) return iter->second;
-		if (mass>iter->first) {
+	        if (mass == iter->first) return iter->second;
+		if (mass > iter->first) {
+		  std::cout << "------------>>>>>>> " << mass << " "<< iter->first << std::endl;
+		  std::cout << "1111111111111111111111" << std::endl;
 			double lowmass = iter->first;
 			double lowxsec = iter->second;
 			++iter;
-			if (mass<iter->first) {
+			if (mass < iter->first) {
+			  std::cout << "2222222222222222222222222222" << std::endl;
 				double highmass = iter->first;
 				double highxsec = iter->second;
 				double xsec = (highxsec-lowxsec)/(highmass-lowmass)*(mass-lowmass)+lowxsec;
@@ -382,7 +391,7 @@ double Normalization_13TeV::GetXsection(double mass, TString HistName) {
 		}
 	}
 
-	std::cout << "[WARNING] Warning cross section outside range of 80-300GeV!!!!" << std::endl;
+	std::cout << "[WARNING] Warning cross section outside range of 80-300GeV!!!! " << std::endl;
 	//exit(1);
 	return -1;
 

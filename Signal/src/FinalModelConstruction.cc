@@ -1345,6 +1345,7 @@ void FinalModelConstruction::getNormalization(){
   bool fitToConstant=0; //if low-stats category, don;' try to fit to polynomial
   for (unsigned int i=0; i<allMH_.size(); i++){
     double mh = double(allMH_[i]);
+    std::cout << "===================>>>>> mh " << mh << std::endl;
     if( (proc_=="testBBH" || proc_=="testTHQ" || proc_=="testTHW") && mh!=125 ) continue;
     RooDataSet *data = stdDatasets[mh];
 	double effAcc =0.;
@@ -1414,7 +1415,8 @@ void FinalModelConstruction::getNormalization(){
   TGraph *  xsGraph = new TGraph();
   TGraph *  brGraph = new TGraph();
   int point=0;
-  for (float m =120; m<131; m=m+0.5){
+  // for (float m =120; m<131; m=m+0.5){
+  for (float m =120; m<=130; m=m+0.5){
     MH->setVal(m);
     xsGraph->SetPoint(point,m,xs->getVal());
     brGraph->SetPoint(point,m,brSpline->getVal());

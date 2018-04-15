@@ -5,6 +5,8 @@ FILE="";
 EXT="auto"; #extensiom for all folders and files created by this script
 PROCS="ggh"
 CATS="UntaggedTag_0,UntaggedTag_1,UntaggedTag_2,UntaggedTag_3,UntaggedTag_4,VBFTag_0,VBFTag_1,VBFTag_2"
+FlASHGGCATSIN="UntaggedTag_0,UntaggedTag_1,UntaggedTag_2,UntaggedTag_3,UntaggedTag_4,VBFTag_0,VBFTag_1,VBFTag_2"
+CUTFORBDT=""
 SCALES="HighR9EE,LowR9EE,HighR9EB,LowR9EB"
 #SCALESCORR="MaterialCentral,MaterialForward,FNUFEE,FNUFEB,ShowerShapeHighR9EE,ShowerShapeHighR9EB,ShowerShapeLowR9EE,ShowerShapeLowR9EB"
 SCALESCORR="MaterialCentral,MaterialForward"
@@ -12,6 +14,8 @@ SCALESCORR="MaterialCentral,MaterialForward"
 SCALESGLOBAL="NonLinearity,Geant4,LightYield,Absolute"
 SMEARS="HighR9EE,LowR9EE,HighR9EB,LowR9EB" #DRY RUN
 MASSLIST="120,125,130"
+MASSLOW="115"
+MASSHIGH="135"
 FTESTONLY=0
 CALCPHOSYSTONLY=0
 SIMULATENOUSMASSPOINTFITTING=0
@@ -33,6 +37,8 @@ usage(){
 		echo "-i|--inputFile) "
 		echo "-p|--procs) "
 		echo "-f|--flashggCats) (default UntaggedTag_0,UntaggedTag_1,UntaggedTag_2,UntaggedTag_3,UntaggedTag_4,VBFTag_0,VBFTag_1,VBFTag_2,TTHHadronicTag,TTHLeptonicTag,VHHadronicTag,VHTightTag,VHLooseTag,VHEtTag)"
+		echo "--flashggCatsIn) (default UntaggedTag_0,UntaggedTag_1,UntaggedTag_2,UntaggedTag_3,UntaggedTag_4,VBFTag_0,VBFTag_1,VBFTag_2,TTHHadronicTag,TTHLeptonicTag,VHHadronicTag,VHTightTag,VHLooseTag,VHEtTag)"
+		echo "--cutforBDT) (default '')"
     echo "--useDCB_1G) Use the functional form ofi a Double Crystal Ball + one Gaussian (same mean) (default $USEDCBP1G)"
     echo "--useSSF) SSF = Simultaneous Signal Fitting. Do a fit where the mass points are all fitted at once where the parameters have MH dependence (default $SIMULATENOUSMASSPOINTFITTING)"
 		echo "--ext)  (default auto)"
@@ -49,7 +55,7 @@ usage(){
 
 
 # options may be followed by one colon to indicate they have a required argument
-if ! options=$(getopt -u -o hi:p:f: -l help,inputFile:,procs:,bs:,smears:,massList:,scales:,scalesCorr:,useSSF:,useDCB_1G:,scalesGlobal:,flashggCats:,ext:,fTestOnly,calcPhoSystOnly,sigFitOnly,sigPlotsOnly,intLumi:,batch: -- "$@")
+if ! options=$(getopt -u -o hi:p:f: -l help,inputFile:,procs:,bs:,smears:,massList:,mhLow:,mhHigh:,scales:,scalesCorr:,useSSF:,useDCB_1G:,scalesGlobal:,flashggCats:,flashggCatsIn:,cutforBDT:,ext:,fTestOnly,calcPhoSystOnly,sigFitOnly,sigPlotsOnly,intLumi:,batch: -- "$@")
 then
 # something went wrong, getopt will put out an error message for us
 exit 1
@@ -63,12 +69,16 @@ case $1 in
 -i|--inputFile) FILE=$2; shift ;;
 -p|--procs) PROCS=$2; shift ;;
 --massList) MASSLIST=$2; shift ;;
+--mhLow) MASSLOW=$2; shift ;;
+--mhHigh) MASSHIGH=$2; shift ;;
 --smears) SMEARS=$2; shift ;;
 --scales) SCALES=$2; shift ;;
 --scalesCorr) SCALESCORR=$2; shift ;;
 --scalesGlobal) SCALESGLOBAL=$2; shift ;;
 --bs) BS=$2; shift ;;
 -f|--flashggCats) CATS=$2; shift ;;
+--flashggCatsIn) FLASHGGCATSIN=$2; shift ;;
+--cutforBDT) CUTFORBDT=$2; shift ;;
 --ext) EXT=$2 ; shift ;;
 --useSSF) SIMULATENOUSMASSPOINTFITTING=$2 ; shift;;
 --useDCB_1G) USEDCBP1G=$2 ; shift;;
@@ -123,14 +133,14 @@ BSOPT=" --bs $BS"
 fi
 
 
-if [ $USEDCBP1G == 0 ]; then
+if [ $USEDCBP1G == 1 ]; then
 
 ####################################################
 ################## SIGNAL F-TEST ###################
 ####################################################
 #ls dat/newConfig_${EXT}.dat
 if [ -e dat/newConfig_${EXT}.dat ]; then
-  echo "[INFO] sigFTest dat file $OUTDIR/dat/copy_newConfig_${EXT}.dat already exists, so SKIPPING SIGNAL FTEST"
+  echo "[INFO] sigFTest dat file dat/newConfig_${EXT}.dat already exists, so SKIPPING SIGNAL FTEST"
 else
   if [ $FTESTONLY == 1 ]; then
     mkdir -p $OUTDIR/fTest
@@ -138,12 +148,34 @@ else
     echo "Running Signal F-Test"
     echo "-->Determine Number of gaussians"
     echo "=============================="
+    echo $BATCH
     if [ -z $BATCH ]; then
-      echo "./bin/signalFTest -i $FILE -d dat/newConfig_$EXT.dat -p $PROCS -f $CATS -o $OUTDIR"
-      ./bin/signalFTest -i $FILE -d dat/newConfig_$EXT.dat -p $PROCS -f $CATS -o $OUTDIR
+      rm voodoo	
+      for pr in `echo $PROCS | tr "," "\n" `
+      do         
+      rm dat/config.dat
+      #echo $FILE | tr "," "\n"
+      echo $pr
+      FILEIN=`echo $FILE | tr "," "\n" | grep ${pr}.root | tr "\n" "," | sed 's/.$//'`
+      #echo $FILEIN
+      echo "========================================================================================================="
+      echo "./bin/signalFTest -i $FILEIN -d dat/newConfig_${EXT}_${pr}.dat -p ${pr} -f $CATS -o $OUTDIR --flashggCatsIn $FLASHGGCATSIN --cutforBDT $CUTFORBDT"
+      ./bin/signalFTest -i $FILEIN -d dat/newConfig_${EXT}_${pr}.dat -p ${pr} -f $CATS -o $OUTDIR --flashggCatsIn $FLASHGGCATSIN --cutforBDT $CUTFORBDT
+      cat dat/newConfig_${EXT}_${pr}.dat >> voodoo
+      done
+      
+      mv voodoo dat/newConfig_${EXT}.dat
+      cp dat/newConfig_${EXT}.dat dat/copy_newConfig_${EXT}.dat
+      sort -u dat/newConfig_${EXT}.dat > dat/tmp_newConfig_${EXT}.dat
+      mv dat/tmp_newConfig_${EXT}.dat dat/newConfig_${EXT}.dat
+      cp dat/newConfig_${EXT}.dat $OUTDIR/dat/copy_newConfig_${EXT}.dat
+
+
+      #echo "./bin/signalFTest -i $FILE -d dat/newConfig_$EXT.dat -p $PROCS -f $CATS -o $OUTDIR --flashggCatsIn $FLASHGGCATSIN --cutforBDT $CUTFORBDT"
+      #./bin/signalFTest -i $FILE -d dat/newConfig_$EXT.dat -p $PROCS -f $CATS -o $OUTDIR --flashggCatsIn $FLASHGGCATSIN --cutforBDT $CUTFORBDT
     else
       echo "./python/submitSignaFTest.py --procs $PROCS --flashggCats $CATS --outDir $OUTDIR --i $FILE --batch $BATCH -q $DEFAULTQUEUE"
-      ./python/submitSignaFTest.py --procs $PROCS --flashggCats $CATS --outDir $OUTDIR --i $FILE --batch $BATCH -q $DEFAULTQUEUE
+      #./python/submitSignaFTest.py --procs $PROCS --flashggCats $CATS --outDir $OUTDIR --i $FILE --batch $BATCH -q $DEFAULTQUEUE
       PEND=`ls -l $OUTDIR/fTestJobs/sub*| grep -v "\.run" | grep -v "\.done" | grep -v "\.fail" | grep -v "\.err" |grep -v "\.log"  |wc -l`
       echo "PEND $PEND"
       while (( $PEND > 0 )) ; do
@@ -162,22 +194,22 @@ else
         sleep 10
       done
     fi
-    mkdir -p $OUTDIR/dat
-    cat $OUTDIR/fTestJobs/outputs/* > dat/newConfig_${EXT}_temp.dat
-    sort -u dat/newConfig_${EXT}_temp.dat  > dat/tmp_newConfig_${EXT}_temp.dat 
-    mv dat/tmp_newConfig_${EXT}_temp.dat dat/newConfig_${EXT}_temp.dat
-    cp dat/newConfig_${EXT}_temp.dat $OUTDIR/dat/copy_newConfig_${EXT}_temp.dat
-    rm -rf $OUTDIR/sigfTest
-    mv $OUTDIR/fTest $OUTDIR/sigfTest
+    #mkdir -p $OUTDIR/dat
+    #cat $OUTDIR/fTestJobs/outputs/* > dat/newConfig_${EXT}_temp.dat
+    #sort -u dat/newConfig_${EXT}_temp.dat  > dat/tmp_newConfig_${EXT}_temp.dat 
+    #mv dat/tmp_newConfig_${EXT}_temp.dat dat/newConfig_${EXT}_temp.dat
+    #cp dat/newConfig_${EXT}_temp.dat $OUTDIR/dat/copy_newConfig_${EXT}_temp.dat
+    #rm -rf $OUTDIR/sigfTest
+    #mv $OUTDIR/fTest $OUTDIR/sigfTest
   fi
-  echo "[INFO] SUCCESS sigFTest jobs completed, check output and do:"
-  echo "cp $PWD/dat/newConfig_${EXT}_temp.dat $PWD/dat/newConfig_${EXT}.dat"
-  echo "and manually amend chosen number of gaussians using the output pdfs here:"
-	echo "Signal/outdir_${EXT}/sigfTest/"
-  echo "then re-run the same command to continue !"
-  CALCPHOSYSTONLY=0
-  SIGFITONLY=0
-  SIGPLOTSONLY=0
+  #echo "[INFO] SUCCESS sigFTest jobs completed, check output and do:"
+  #echo "cp $PWD/dat/newConfig_${EXT}_temp.dat $PWD/dat/newConfig_${EXT}.dat"
+  #echo "and manually amend chosen number of gaussians using the output pdfs here:"
+  #	echo "Signal/outdir_${EXT}/sigfTest/"
+  #echo "then re-run the same command to continue !"
+  #CALCPHOSYSTONLY=0
+  #SIGFITONLY=0
+  #SIGPLOTSONLY=0
 	exit 1
 fi
 fi
@@ -192,8 +224,8 @@ if [ $CALCPHOSYSTONLY == 1 ]; then
   echo "-->Determine effect of photon systematics"
   echo "=============================="
 
-  echo "./bin/calcPhotonSystConsts -i $FILE -o dat/photonCatSyst_$EXT.dat -p $PROCS -s $SCALES -S $SCALESCORR -g $SCALESGLOBAL -r $SMEARS -D $OUTDIR -f $CATS"
-  ./bin/calcPhotonSystConsts -i $FILE -o dat/photonCatSyst_$EXT.dat -p $PROCS -s $SCALES -S $SCALESCORR -g $SCALESGLOBAL -r $SMEARS -D $OUTDIR -f $CATS
+  echo "./bin/calcPhotonSystConsts -i $FILE -o dat/photonCatSyst_$EXT.dat -p $PROCS -s $SCALES -S $SCALESCORR -g $SCALESGLOBAL -r $SMEARS -D $OUTDIR -f $CATS --flashggCatsIn $FLASHGGCATSIN --cutforBDT $CUTFORBDT -P true"
+  ./bin/calcPhotonSystConsts -i $FILE -o dat/photonCatSyst_$EXT.dat -p $PROCS -s $SCALES -S $SCALESCORR -g $SCALESGLOBAL -r $SMEARS -D $OUTDIR -f $CATS --flashggCatsIn $FLASHGGCATSIN --cutforBDT $CUTFORBDT -P true -v 1
   mkdir -p $OUTDIR/dat
   cp dat/photonCatSyst_$EXT.dat $OUTDIR/dat/copy_photonCatSyst_$EXT.dat
 fi
@@ -208,11 +240,44 @@ if [ $SIGFITONLY == 1 ]; then
   echo "=============================="
 
 
-  if [[ $BATCH == "" ]]; then
-  
-  
-    echo "./bin/SignalFit -i $FILE -d dat/newConfig_$EXT.dat  --mhLow=120 --mhHigh=130 -s dat/photonCatSyst_$EXT.dat --procs $PROCS -o $OUTDIR/CMS-HGG_mva_13TeV_sigfit.root -p $OUTDIR/sigfit -f $CATS --changeIntLumi $INTLUMI  --useDCBplusGaus $USEDCBP1G --useSSF $SIMULATENOUSMASSPOINTFITTING --massList $MASSLIST"
-    ./bin/SignalFit -i $FILE -d dat/newConfig_$EXT.dat  --mhLow=120 --mhHigh=130 -s dat/photonCatSyst_$EXT.dat --procs $PROCS -o $OUTDIR/CMS-HGG_mva_13TeV_sigfit.root -p $OUTDIR/sigfit -f $CATS --changeIntLumi $INTLUMI  --useDCBplusGaus $USEDCBP1G --useSSF $SIMULATENOUSMASSPOINTFITTING --massList $MASSLIST  
+    echo $BATCH
+  if [ -z $BATCH ]; then
+
+      for pr in `echo $PROCS | tr "," "\n" `
+      do  
+          #echo $FILE | tr "," "\n"
+	  FILEIN=`echo $FILE | tr "," "\n" | grep ${pr}.root | tr "\n" "," | sed 's/.$//'`
+          #echo $FILEIN
+	  for ca in `echo $CATS | tr "," "\n" `
+	  do
+	      echo ${pr}_${ca}
+	      echo "========================================================================================================="
+	      echo "./bin/SignalFit -i $FILE -d dat/newConfig_$EXT.dat  --mhLow=$MASSLOW --mhHigh=$MASSHIGH -s dat/photonCatSyst_$EXT.dat --procs $PROCS -o $OUTDIR/CMS-HGG_mva_13TeV_sigfit.root -p $OUTDIR/sigfit -f $CATS --flashggCatsIn $FLASHGGCATSIN --changeIntLumi $INTLUMI  --useDCBplusGaus $USEDCBP1G --useSSF $SIMULATENOUSMASSPOINTFITTING --massList $MASSLIST --split ${pr},${ca} -v 1"
+
+	      ./bin/SignalFit -i $FILE -d dat/newConfig_$EXT.dat  --mhLow=$MASSLOW --mhHigh=$MASSHIGH -s dat/photonCatSyst_$EXT.dat --procs $PROCS -o $OUTDIR/CMS-HGG_mva_13TeV_sigfit_${pr}_${ca}.root -p $OUTDIR/sigfit -f $CATS --flashggCatsIn $FLASHGGCATSIN --cutforBDT $CUTFORBDT --changeIntLumi $INTLUMI  --useDCBplusGaus $USEDCBP1G --useSSF $SIMULATENOUSMASSPOINTFITTING --massList $MASSLIST --split ${pr},${ca} -v 1
+	  done
+      done
+      ls $OUTDIR/CMS-HGG_mva_13TeV_sigfit_*.root > out.txt
+      echo "ls $OUTDIR/CMS-HGG_mva_13TeV_sigfit_*.root > out.txt"
+      counter=0
+      while read p ; do
+	  if (($counter==0)); then
+              SIGFILES="$p"
+	  else
+              SIGFILES="$SIGFILES,$p"
+	  fi
+	  ((counter=$counter+1))
+      done < out.txt
+      echo "SIGFILES $SIGFILES"
+      
+    #./makeSlides.sh $OUTDIR
+    #scp fullslides.pdf lcorpe@lxplus.cern.ch:www/scratch/fullslides.pdf
+    #exit 1
+      echo "./bin/PackageOutput -i $SIGFILES --procs $PROCS -l $INTLUMI -p $OUTDIR/sigfit -W wsig_13TeV -f $CATS -L 120 -H 130 -o $OUTDIR/CMS-HGG_sigfit_$EXT.root"
+      ./bin/PackageOutput -i $SIGFILES --procs $PROCS -l $INTLUMI -p $OUTDIR/sigfit -W wsig_13TeV -f $CATS -L 120 -H 130 -o $OUTDIR/CMS-HGG_sigfit_$EXT.root > package.out
+
+      
+
   else
     #echo "./python/submitSignalFit.py -i $FILE -d dat/newConfig_$EXT.dat  --mhLow=120 --mhHigh=130 -s dat/photonCatSyst_$EXT.dat --procs $PROCS -o $OUTDIR/CMS-HGG_sigfit_$EXT.root -p $OUTDIR/sigfit -f $CATS --changeIntLumi $INTLUMI --batch $BATCH --massList $MASSLIST -q $DEFAULTQUEUE $BSOPT --useSSF $SIMULATENOUSMASSPOINTFITTING --useDCB_1G $USEDCBP1G "
     #./python/submitSignalFit.py -i $FILE -d dat/newConfig_$EXT.dat  --mhLow=120 --mhHigh=130 -s dat/photonCatSyst_$EXT.dat --procs $PROCS -o $OUTDIR/CMS-HGG_sigfit_$EXT.root -p $OUTDIR/sigfit -f $CATS --changeIntLumi $INTLUMI --batch $BATCH --massList $MASSLIST -q $DEFAULTQUEUE $BSOPT --useSSF $SIMULATENOUSMASSPOINTFITTING --useDCB_1G $USEDCBP1G 
@@ -237,8 +302,8 @@ if [ $SIGFITONLY == 1 ]; then
     #done
 
     #ls $PWD/$OUTDIR/CMS-HGG_sigfit_${EXT}_*.root > out.txt
-    ls $OUTDIR/CMS-HGG_sigfit_${EXT}_*.root > out.txt
-    echo "ls ../Signal/$OUTDIR/CMS-HGG_sigfit_${EXT}_*.root > out.txt"
+    ls $OUTDIR/CMS-HGG_mva_13TeV_sigfit_*.root > out.txt
+    echo "ls $OUTDIR/CMS-HGG_mva_13TeV_sigfit_*.root > out.txt"
     counter=0
     while read p ; do
       if (($counter==0)); then

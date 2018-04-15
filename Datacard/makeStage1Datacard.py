@@ -19,7 +19,26 @@ import ROOT as r
 r.gROOT.ProcessLine(".L $CMSSW_BASE/lib/$SCRAM_ARCH/libHiggsAnalysisCombinedLimit.so")
 #r.gROOT.ProcessLine(".L ../libLoopAll.so")
 ###############################################################################
+def reduceDataset(data0, dataNameout, catlow, cathigh):
 
+    #datasetReduced = data0.emptyClone( dataNameout, dataNameout )
+    datasetReduced = data0.emptyClone()
+    # datasetReduced = RooDataSet( data0.emptyClone( dataNameout, dataNameout ) )
+    #datasetReduced = RooDataSet( dataNameout, dataNameout )
+    print data0.GetName()
+    print datasetReduced.GetName()
+    #print "11111111111111111111"
+    for i in range(0,int(data0.numEntries())):
+       #print "22222222222222222222222222222222222"
+       dm = data0.get(i).getRealValue("dijet_mva")
+       #print "3333333333" , dm
+
+       if ( (dm < float(cathigh)) and (dm >= float(catlow)) ):
+          #print "555555555555555555555555555555"
+          #print "weight ", data0.weight()
+          datasetReduced.add( data0.get(i) , data0.weight())
+
+    return datasetReduced
 ###############################################################################
 ## WSTFileWrapper  ############################################################
 ###############################################################################
@@ -49,17 +68,21 @@ class WSTFileWrapper:
         theDataName = dataName.replace(theProcName,tpMap[stxsProc],1)
     return [theDataName,theProcName]
 
-  def data(self, dataName, fromCurrent=True):
+  def data(self, dataName, dataNameout, catlow, cathigh, fromCurrent=True):
     thePair = self.convertTemplatedName(dataName)
     newDataName = thePair[0]
     newProcName = thePair[1]
     self.fileList[newProcName].cd()
     if not fromCurrent: 
       print 'WARNING: in potentially memory-problematic data acquisition function'
-      return self.fileList[newProcName].Get(self.wsName).data(newDataName)
+      this_result_obj0 = self.fileList[newProcName].Get(self.wsName).data(newDataName)
+      this_result_obj = reduceDataset( this_result_obj0,  dataNameout , catlow, cathigh )
+      return this_result_obj
     else: 
       print 'HELLO: in supposedly less harmful data acquisition function'
-      return self.currentWS.data(newDataName)
+      this_result_obj0 = self.currentWS.data(newDataName)
+      this_result_obj = reduceDataset( this_result_obj0,  dataNameout , catlow, cathigh )
+      return this_result_obj
   
   def var(self, varName):
     result = self.wsList[0].var(varName)
@@ -85,6 +108,8 @@ parser.add_option("-i","--infilename", help="Input file (binned signal from flas
 parser.add_option("-o","--outfilename",default="cms_hgg_datacard.txt",help="Name of card to print (default: %default)")
 parser.add_option("-p","--procs",default="ggh,vbf,wh,zh,tth",help="String list of procs (default: %default)")
 parser.add_option("-c","--cats",default="UntaggedTag_0,UntaggedTag_1,UntaggedTag_2,UntaggedTag_3,UntaggedTag_4,VBFTag_0,VBFTag_1,VBFTag_2",help="Flashgg Categories (default: %default)")
+parser.add_option("--catsin",default="VBFTag",help="Flashgg Categories input before split (default: %default)")
+parser.add_option("--cutforBDT","--cutforBDT",default="0.2,0.4,0.6,0.8,1.0",help="Flashgg Categories (default: %default)")
 parser.add_option("--uepsfilename",default="",help="input files for calculating UEPS systematics; leave blank to use most recent set")
 parser.add_option("--batch",default="LSF",help="Batch system  (default: %default)")
 parser.add_option("--photonCatScales",default="HighR9EE,LowR9EE,HighR9EB,LowR9EB",help="String list of photon scale nuisance names - WILL NOT correlate across years (default: %default)")
@@ -124,6 +149,10 @@ outFile = open(options.outfilename,'w')
 ###############################################################################
 # convert flashgg style to combine style process
 tempProcs = options.procs.split(',')
+options.catsin = options.catsin.split(',')
+options.cutforBDT = options.cutforBDT.split(',')
+catsin = options.catsin[0] # Hardcoded since only one category optimization can be performed. 
+cutforBDT = options.cutforBDT 
 combProcs = {}
 baseCombProcs = {'GG2H':'ggH_hgg','VBF':'qqH_hgg','TTH':'ttH_hgg','QQ2HLNU':'WH_lep_hgg','QQ2HLL':'ZH_lep_hgg','WH2HQQ':'WH_had_hgg','ZH2HQQ':'ZH_had_hgg','testBBH':'bbH_hgg','testTHQ':'tHq_hgg','testTHW':'tHW_hgg','bkg_mass':'bkg_mass'}
 for proc in tempProcs:
@@ -295,7 +324,16 @@ for proc in options.procs:
       weight_central = inWS.var("centralObjectWeight") 
       weight_sumW = inWS.var("sumW")
       for cat in inclusiveCats:
-        data_nominal= inWS.data("%s_%d_13TeV_%s_pdfWeights"%(flashggProcs[proc],options.mass,cat))
+        #if this is one of the optimized categories, find which and subset.
+        #e.g if cat is 'RECO_VBFTOPO_JET3VETO_0', then the input cat file will be 
+        #'RECO_VBFTOPO_JET3VETO'. That's why in name is cat[:-2]
+        #data_nominal = r.RooDataset()
+        if catsin in cat:
+          data_nominal= inWS.data("%s_%d_13TeV_%s_pdfWeights"%(flashggProcs[proc],options.mass,cat[:-2]), "%s_%d_13TeV_%s_pdfWeights"%(flashggProcs[proc],options.mass,cat), cutforBDT[int(cat[-1])], cutforBDT[int(cat[-1])+1] )
+        else: 
+          data_nominal= inWS.data("%s_%d_13TeV_%s_pdfWeights"%(flashggProcs[proc],options.mass,cat), "%s_%d_13TeV_%s_pdfWeights"%(flashggProcs[proc],options.mass,cat), cutforBDT[0], cutforBDT[len(cutforBDT)-1] )
+
+        #data_nominal= inWS.data("%s_%d_13TeV_%s_pdfWeights"%(flashggProcs[proc],options.mass,cat))
         print 'on proc %s, cat %s, looking for dataset %s'%(proc, cat, "%s_%d_13TeV_%s_pdfWeights"%(flashggProcs[proc],options.mass,cat))
         data_nominal_sum = data_nominal.sumEntries()
         data_up = data_nominal.emptyClone();
@@ -396,7 +434,7 @@ def printTheorySysts():
     if (not "Theory" in allSystList ) :allSystList.append("Theory")
     if (not options.justThisSyst=="") :
       if (not options.justThisSyst=="Theory"): continue
-    #print  "DEBUG consider name ", syst
+    print  "DEBUG consider name ", syst
     asymmetric= False
     if "_up" in syst : asymmetric= True
     if "_down" in syst : continue #already considered as part of "_up"
@@ -445,7 +483,13 @@ def getFlashggLineTheoryWeights(proc,cat,name,i,asymmetric,j=0,factor=1):
   weight_sumW = inWS.var("sumW") 
   #data_nominal = inWS.data("%s_%d_13TeV_%s"%(proc,options.mass,cat))
   inWS.setCurrentWorkspace(proc)
-  data_nominal= inWS.data("%s_%d_13TeV_%s_pdfWeights"%(proc,options.mass,cat))
+
+  if catsin in cat:
+    data_nominal= inWS.data("%s_%d_13TeV_%s_pdfWeights"%(proc,options.mass,cat[:-2]), "%s_%d_13TeV_%s_pdfWeights"%(proc,options.mass,cat), cutforBDT[int(cat[-1])], cutforBDT[int(cat[-1])+1] )
+  else: 
+    data_nominal= inWS.data("%s_%d_13TeV_%s_pdfWeights"%(proc,options.mass,cat), "%s_%d_13TeV_%s_pdfWeights"%(proc,options.mass,cat), cutforBDT[0], cutforBDT[len(cutforBDT)-1] )
+    
+  #data_nominal= inWS.data("%s_%d_13TeV_%s_pdfWeights"%(proc,options.mass,cat))
   data_nominal_sum = data_nominal.sumEntries()
   if (data_nominal_sum <= 0.):
       print "[WARNING] This dataset has 0 or negative sum of weight. Systematic calulcxation meaningless, so list as '- '"
@@ -553,7 +597,14 @@ def getFlashggLineTheoryEnvelope(proc,cat,name,details):
   
   for iReplica in indices:
     inWS.setCurrentWorkspace(proc)
-    data_nominal = inWS.data("%s_%d_13TeV_%s"%(proc,options.mass,cat)) #FIXME
+    
+    #data_nominal = r.RooDataset()
+    if catsin in cat:
+      data_nominal= inWS.data("%s_%d_13TeV_%s"%(proc,options.mass,cat[:-2]), "%s_%d_13TeV_%s"%(proc,options.mass,cat), cutforBDT[int(cat[-1])], cutforBDT[int(cat[-1])+1] )
+    else: 
+      data_nominal= inWS.data("%s_%d_13TeV_%s"%(proc,options.mass,cat), "%s_%d_13TeV_%s"%(proc,options.mass,cat), cutforBDT[0], cutforBDT[len(cutforBDT)-1] )
+      
+    #data_nominal = inWS.data("%s_%d_13TeV_%s"%(proc,options.mass,cat)) #FIXME
     data_nominal_num = data_nominal.numEntries()
     data_new_h = r.TH1F("h_%d"%iReplica,"h_%d"%iReplica,nBins,100,180);
     data_nom_h = r.TH1F("h_nom_%d"%iReplica,"h_nom_%d"%iReplica,nBins,100,180);
@@ -762,24 +813,24 @@ flashggSysts={}
 vtxSyst = 0.02 #updated for Moriond17
 
 #photon ID
-flashggSysts['MvaShift'] =  'phoIdMva'
+#flashggSysts['MvaShift'] =  'phoIdMva'
 flashggSysts['LooseMvaSF'] =  'LooseMvaSF'
 flashggSysts['PreselSF']    =  'PreselSF'
 flashggSysts['SigmaEOverEShift'] = 'SigmaEOverEShift'
 flashggSysts['ElectronWeight'] = 'eff_e'
 flashggSysts['electronVetoSF'] = 'electronVetoSF'
 flashggSysts['MuonWeight'] = 'eff_m'
-flashggSysts['MuonMiniIsoWeight'] = 'eff_m_MiniIso'
-flashggSysts['TriggerWeight'] = 'TriggerWeight'
+#flashggSysts['MuonMiniIsoWeight'] = 'eff_m_MiniIso'
+#flashggSysts['TriggerWeight'] = 'TriggerWeight'
 #flashggSysts['JetBTagWeight'] = 'eff_b'
-flashggSysts['JetBTagCutWeight'] = 'eff_b'
+#flashggSysts['JetBTagCutWeight'] = 'eff_b'
 #flashggSysts['MvaLinearSyst'] = 'MvaLinearSyst'
 #flashggSysts[''] =  ''
 #FIXME: should really only apply to MET categories
 flashggSysts['metPhoUncertainty'] = 'MET_PhotonScale'
-flashggSysts['metUncUncertainty'] = 'MET_Unclustered'
-flashggSysts['metJecUncertainty'] = 'MET_JEC'
-flashggSysts['metJerUncertainty'] = 'MET_JER'
+#flashggSysts['metUncUncertainty'] = 'MET_Unclustered'
+#flashggSysts['metJecUncertainty'] = 'MET_JEC'
+#flashggSysts['metJerUncertainty'] = 'MET_JER'
 
 #new ggH uncert prescription (replaces theory, JetVeto)
 if options.newGghScheme:
@@ -1060,12 +1111,32 @@ def getFlashggLine(proc,cat,syst):
   print 'in getFlashggLine(), processing proc, cat, syst: %s, %s, %s'%(proc,cat,syst)
   asymmetric=False 
   eventweight=False 
-  #print "===========> SYST", syst ," PROC ", proc , ", TAG ", cat
+  print "===========> SYST", syst ," PROC ", proc , ", TAG ", cat
+  
   inWS.setCurrentWorkspace(flashggProcs[proc])
-  dataSYMMETRIC =  inWS.data("%s_%d_13TeV_%s_%s"%(flashggProcs[proc],options.mass,cat,syst)) #Will exist if the systematic is a symmetric uncertainty not stored as event weights
-  dataDOWN =  inWS.data("%s_%d_13TeV_%s_%sDown01sigma"%(flashggProcs[proc],options.mass,cat,syst)) # will exist if teh systematic is an asymetric uncertainty not strore as event weights
-  dataUP =  inWS.data("%s_%d_13TeV_%s_%sUp01sigma"%(flashggProcs[proc],options.mass,cat,syst))# will exist if teh systematic is an asymetric uncertainty not strore as event weights
-  dataNOMINAL =  inWS.data("%s_%d_13TeV_%s"%(flashggProcs[proc],options.mass,cat)) #Nominal RooDataSet,. May contain required weights if UP/DOWN/SYMMETRIC roodatahists do not exist (ie systematic stored as event weigths)
+ 
+  #dataSYMMETRIC = r.RooDataset()
+  #dataDOWN = r.RooDataset()
+  #dataUP = r.RooDataset()
+  #dataNOMINAL = r.RooDataset()
+  if catsin in cat:
+    #dataSYMMETRIC =  inWS.data("%s_%d_13TeV_%s_%s"%(flashggProcs[proc],options.mass,cat,syst)) #Will exist if the systematic is a symmetric uncertainty not stored as event weights
+    #dataDOWN =  inWS.data("%s_%d_13TeV_%s_%sDown01sigma"%(flashggProcs[proc],options.mass,cat,syst)) # will exist if teh systematic is an asymetric uncertainty not strore as event weights
+    #dataUP =  inWS.data("%s_%d_13TeV_%s_%sUp01sigma"%(flashggProcs[proc],options.mass,cat,syst))# will exist if teh systematic is an asymetric uncertainty not strore as event weights
+    #dataNOMINAL =  inWS.data("%s_%d_13TeV_%s"%(flashggProcs[proc],options.mass,cat)) #Nominal RooDataSet,. May contain required weights if UP/DOWN/SYMMETRIC roodatahists do not exist (ie systematic stored as event weigths)
+    dataSYMMETRIC =  inWS.data("%s_%d_13TeV_%s_%s"%(flashggProcs[proc],options.mass,cat[:-2],syst), "%s_%d_13TeV_%s_%s"%(flashggProcs[proc],options.mass,cat,syst), cutforBDT[int(cat[-1])], cutforBDT[int(cat[-1])+1] ) #Will exist if the systematic is a symmetric uncertainty not stored as event weights
+    dataDOWN =  inWS.data("%s_%d_13TeV_%s_%sDown01sigma"%(flashggProcs[proc],options.mass,cat[:-2],syst),"%s_%d_13TeV_%s_%sDown01sigma"%(flashggProcs[proc],options.mass,cat,syst), cutforBDT[int(cat[-1])], cutforBDT[int(cat[-1])+1] ) # will exist if teh systematic is an asymetric uncertainty not strore as event weights
+    dataUP =  inWS.data("%s_%d_13TeV_%s_%sUp01sigma"%(flashggProcs[proc],options.mass,cat[:-2],syst), "%s_%d_13TeV_%s_%sUp01sigma"%(flashggProcs[proc],options.mass,cat,syst), cutforBDT[int(cat[-1])], cutforBDT[int(cat[-1])+1])# will exist if teh systematic is an asymetric uncertainty not strore as event weights
+    dataNOMINAL =  inWS.data("%s_%d_13TeV_%s"%(flashggProcs[proc],options.mass,cat[:-2]),"%s_%d_13TeV_%s"%(flashggProcs[proc],options.mass,cat), cutforBDT[int(cat[-1])], cutforBDT[int(cat[-1])+1]) #Nominal RooDataSet,. May contain required weights if UP/DOWN/SYMMETRIC roodatahists do not exist (ie systematic stored as event weigths)
+  else: 
+    dataSYMMETRIC =  inWS.data("%s_%d_13TeV_%s_%s"%(flashggProcs[proc],options.mass,cat,syst), "%s_%d_13TeV_%s_%s"%(flashggProcs[proc],options.mass,cat,syst), cutforBDT[0], cutforBDT[len(cutforBDT)-1] ) #Will exist if the systematic is a symmetric uncertainty not stored as event weights
+    dataDOWN =  inWS.data("%s_%d_13TeV_%s_%sDown01sigma"%(flashggProcs[proc],options.mass,cat,syst),"%s_%d_13TeV_%s_%sDown01sigma"%(flashggProcs[proc],options.mass,cat,syst), cutforBDT[0], cutforBDT[len(cutforBDT)-1] ) # will exist if teh systematic is an asymetric uncertainty not strore as event weights
+    dataUP =  inWS.data("%s_%d_13TeV_%s_%sUp01sigma"%(flashggProcs[proc],options.mass,cat,syst), "%s_%d_13TeV_%s_%sUp01sigma"%(flashggProcs[proc],options.mass,cat,syst), cutforBDT[0], cutforBDT[len(cutforBDT)-1])# will exist if teh systematic is an asymetric uncertainty not strore as event weights
+    dataNOMINAL =  inWS.data("%s_%d_13TeV_%s"%(flashggProcs[proc],options.mass,cat),"%s_%d_13TeV_%s"%(flashggProcs[proc],options.mass,cat), cutforBDT[0], cutforBDT[len(cutforBDT)-1]) #Nominal RooDataSet,. May contain required weights if UP/DOWN/SYMMETRIC roodatahists do not exist (ie systematic stored as event weigths)
+  
+
+    
+
   if (dataSYMMETRIC==None):
     if( (dataUP==None) or  (dataDOWN==None)) :
       #print "[INFO] Systematic ", syst," stored as asymmetric event weights in RooDataSet"
@@ -1478,13 +1549,13 @@ if ((options.justThisSyst== "batch_split") or options.justThisSyst==""):
   printSimpleTTHSysts()
 
 if (len(tthCats) > 0 ):  printTTHSysts()
-printTheorySysts()
+###### ====>>>>>printTheorySysts()
 # lnN systematics
-printFlashggSysts()
-printUEPSSyst()
+###### ====>>>>>printFlashggSysts()
+###### ====>>>>>printUEPSSyst()
 #catgeory migrations
 #if (len(dijetCats) > 0 and len(tthCats)>0):  printVbfSysts()
-if (len(dijetCats) > 0 ):  printVbfSysts()
+###### ====>>>>>if (len(dijetCats) > 0 ):  printVbfSysts()
 #other 
 #printLepSysts() #obsolete
 
