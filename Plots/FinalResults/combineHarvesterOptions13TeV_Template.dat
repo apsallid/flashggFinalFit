@@ -1,6 +1,22 @@
 #complete set of jobs to submit, as used for Moriond 2016.
 datacard=CMS-HGG_mva_13TeV_datacard.txt
-files=CMS-HGG_mva_13TeV_sigfit_GG2H_VBFTOPO_JET3VETO_RECO_VBFTOPO_JET3VETO_0,CMS-HGG_mva_13TeV_sigfit_GG2H_VBFTOPO_JET3VETO_RECO_VBFTOPO_JET3VETO_1,CMS-HGG_mva_13TeV_sigfit_GG2H_VBFTOPO_JET3_RECO_VBFTOPO_JET3VETO_0,CMS-HGG_mva_13TeV_sigfit_GG2H_VBFTOPO_JET3_RECO_VBFTOPO_JET3VETO_1,CMS-HGG_mva_13TeV_multipdf.root
+files=CMS-HGG_sigfit_mva_GG2H_VBFTOPO_JET3VETO_RECO_VBFTOPO_JET3VETO_0.root,CMS-HGG_sigfit_mva_GG2H_VBFTOPO_JET3VETO_RECO_VBFTOPO_JET3VETO_1.root,CMS-HGG_sigfit_mva_GG2H_VBFTOPO_JET3_RECO_VBFTOPO_JET3VETO_0.root,CMS-HGG_sigfit_mva_GG2H_VBFTOPO_JET3_RECO_VBFTOPO_JET3VETO_1.root,CMS-HGG_mva_13TeV_multipdf.root
+
+
+#############################################
+# This is for the optimization - Only one mass considered
+outDir=combineJobs13TeV_!EXT!/ExpProfileLikelihood_m125.4Stat/All                     method=ProfileLikelihoodStat expected=1 expectSignal=1 expectSignalMass=125.4 mhLow=125.4 mhHigh=125.4001 mhStep=0.1 jobs=1
+
+
+
+# expected profile likelihood at mh=125.4
+#outDir=combineJobs13TeV_!EXT!/ExpProfileLikelihood_m125.4/All                         method=ProfileLikelihood expected=1 expectSignal=1 expectSignalMass=125.4 mhLow=120. mhHigh=130. mhStep=0.1 opts=--freezeNuisances<MH>
+
+# exp pval @ 125.4  ##EXPCTED AT 125###
+#outDir=combineJobs13TeV_!EXT!/ExpProfileLikelihood_m125.4/All                         method=ProfileLikelihood expected=1 expectSignal=1 expectSignalMass=125.4 mhLow=120. mhHigh=130. mhStep=0.1 jobs=101
+#outDir=combineJobs13TeV_!EXT!/ExpProfileLikelihood_m125.4Stat/All                     method=ProfileLikelihoodStat expected=1 expectSignal=1 expectSignalMass=125.4 mhLow=120. mhHigh=130. mhStep=0.5 jobs=1
+
+
 
 #############################################
 #############################################
@@ -215,6 +231,7 @@ files=CMS-HGG_mva_13TeV_sigfit_GG2H_VBFTOPO_JET3VETO_RECO_VBFTOPO_JET3VETO_0,CMS
 #outDir=combineJobs13TeV_!EXT!/ExpProfileLikelihood/VBFTag_1_13TeV 		method=ProfileLikelihood expected=1 expectSignal=1 mhLow=120. mhHigh=130. mhStep=1.0 jobs=11 splitChannels=VBFTag_1_13TeV
 #outDir=combineJobs13TeV_!EXT!/ExpProfileLikelihood/TTHHadronicTag_13TeV 		method=ProfileLikelihood expected=1 expectSignal=1 mhLow=120. mhHigh=130. mhStep=1.0 jobs=11 splitChannels=TTHHadronicTag_13TeV
 #outDir=combineJobs13TeV_!EXT!/ExpProfileLikelihood/TTHLeptonicTag_13TeV 		method=ProfileLikelihood expected=1 expectSignal=1 mhLow=120. mhHigh=130. mhStep=1.0 jobs=11 splitChannels=TTHLeptonicTag_13TeV
+
 
 # exp pval @ 125  ##EXPCTED AT 125###
 #outDir=combineJobs13TeV_!EXT!/ExpProfileLikelihood_m125.09/All 			method=ProfileLikelihood expected=1 expectSignal=1 expectSignalMass=125.09 mhLow=120. mhHigh=130. mhStep=0.1 jobs=101

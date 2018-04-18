@@ -484,7 +484,8 @@ def writeProfileLikelhood():
     writePreamble(file)
     exec_line = ''
     for mass in mass_set:
-      exec_line +=  'combine %s -M ProfileLikelihood -m %6.2f --signif --pval --cminDefaultMinimizerType=Minuit2 -L $CMSSW_BASE/lib/$SCRAM_ARCH/libHiggsAnalysisGBRLikelihood.so'%(opts.datacard,mass)
+#      exec_line +=  'combine %s -M ProfileLikelihood -m %6.2f --signif --pval --cminDefaultMinimizerType=Minuit2 -L $CMSSW_BASE/lib/$SCRAM_ARCH/libHiggsAnalysisGBRLikelihood.so'%(opts.datacard,mass)
+      exec_line +=  'combine %s -M ProfileLikelihood -m %6.2f --signif --cminDefaultMinimizerType=Minuit2 -L $CMSSW_BASE/lib/$SCRAM_ARCH/libHiggsAnalysisGBRLikelihood.so'%(opts.datacard,mass)
       if opts.additionalOptions: exec_line += ' %s'%opts.additionalOptions
       if opts.expected: exec_line += ' -t -1 '
       if opts.expectSignal: exec_line += ' --expectSignal=%3.1f'%opts.expectSignal

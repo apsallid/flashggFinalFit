@@ -6,7 +6,8 @@
 ###############################################################################
 ## IMPORTS ####################################################################
 ###############################################################################
-import os,sys,copy,math
+import os,sys,copy,math,gc
+from collections import OrderedDict as odict
 ###############################################################################
 
 ###############################################################################
@@ -47,16 +48,14 @@ class WSTFileWrapper:
   def __init__(self, files, wsName):
     self.fnList = files.split(",")
     self.fileList = {}
-    self.wsList = []
-    self.wsName = wsName
-    self.currentWS = None
+    self.wsList = {}
     for fn in self.fnList:
       if str(options.mass) not in fn: continue
       proc = fn.split('_pythia8_')[1].split('.root')[0]
       f = r.TFile.Open(fn)
       self.fileList[proc] = f
-      if len(self.wsList) == 0:
-        self.wsList.append( f.Get(wsName) )
+      self.wsList[proc]   = f.Get(wsName)
+      print '[WSTFileWrapper] successfully added file and workspace for process %s'%proc
 
   def convertTemplatedName(self, dataName):
     theProcName = ""
@@ -72,29 +71,14 @@ class WSTFileWrapper:
     thePair = self.convertTemplatedName(dataName)
     newDataName = thePair[0]
     newProcName = thePair[1]
-    self.fileList[newProcName].cd()
-    if not fromCurrent: 
-      print 'WARNING: in potentially memory-problematic data acquisition function'
-      this_result_obj0 = self.fileList[newProcName].Get(self.wsName).data(newDataName)
-      this_result_obj = reduceDataset( this_result_obj0,  dataNameout , catlow, cathigh )
-      return this_result_obj
-    else: 
-      print 'HELLO: in supposedly less harmful data acquisition function'
-      this_result_obj0 = self.currentWS.data(newDataName)
-      this_result_obj = reduceDataset( this_result_obj0,  dataNameout , catlow, cathigh )
-      return this_result_obj
-  
+    this_result_obj0 = self.wsList[newProcName].data(newDataName)
+    this_result_obj = reduceDataset( this_result_obj0,  dataNameout , catlow, cathigh )
+    return this_result_obj
+
   def var(self, varName):
-    result = self.wsList[0].var(varName)
+    firstKey = self.wsList.keys()[0]
+    result = self.wsList[firstKey].var(varName)
     return result 
-
-  def getSpecificWorkspace(self, keyName):
-    self.fileList[keyName].cd()
-    return self.fileList[keyName].Get(self.wsName)
-
-  def setCurrentWorkspace(self, keyName):
-    self.fileList[keyName].cd()
-    self.currentWS = self.fileList[keyName].Get(self.wsName)
 
 ###############################################################################
 
@@ -111,6 +95,7 @@ parser.add_option("-c","--cats",default="UntaggedTag_0,UntaggedTag_1,UntaggedTag
 parser.add_option("--catsin",default="VBFTag",help="Flashgg Categories input before split (default: %default)")
 parser.add_option("--cutforBDT","--cutforBDT",default="0.2,0.4,0.6,0.8,1.0",help="Flashgg Categories (default: %default)")
 parser.add_option("--uepsfilename",default="",help="input files for calculating UEPS systematics; leave blank to use most recent set")
+parser.add_option("-j","--justThisCat",default="",help="only run card for one category")
 parser.add_option("--batch",default="LSF",help="Batch system  (default: %default)")
 parser.add_option("--photonCatScales",default="HighR9EE,LowR9EE,HighR9EB,LowR9EB",help="String list of photon scale nuisance names - WILL NOT correlate across years (default: %default)")
 parser.add_option("--photonCatScalesCorr",default="MaterialCentral,MaterialForward,FNUFEE,FNUFEB,ShowerShapeHighR9EE,ShowerShapeHighR9EB,ShowerShapeLowR9EE,ShowerShapeLowR9EB",help="String list of photon scale nuisance names - WILL correlate across years (default: %default)")
@@ -141,6 +126,7 @@ if options.submitSelf :
 ## FILE I/O ###################################################################
 ###############################################################################
 #inFile = r.TFile.Open(options.infilename)
+if not options.justThisCat == "": options.outfilename += '.%'%options.justThisCat
 outFile = open(options.outfilename,'w')
 ###############################################################################
 
@@ -153,7 +139,7 @@ options.catsin = options.catsin.split(',')
 options.cutforBDT = options.cutforBDT.split(',')
 catsin = options.catsin[0] # Hardcoded since only one category optimization can be performed. 
 cutforBDT = options.cutforBDT 
-combProcs = {}
+combProcs = odict()
 baseCombProcs = {'GG2H':'ggH_hgg','VBF':'qqH_hgg','TTH':'ttH_hgg','QQ2HLNU':'WH_lep_hgg','QQ2HLL':'ZH_lep_hgg','WH2HQQ':'WH_had_hgg','ZH2HQQ':'ZH_had_hgg','testBBH':'bbH_hgg','testTHQ':'tHq_hgg','testTHW':'tHW_hgg','bkg_mass':'bkg_mass'}
 for proc in tempProcs:
   combProc = ''
@@ -161,15 +147,17 @@ for proc in tempProcs:
     if proc.startswith(baseProc): combProc = proc.replace(baseProc,baseCombProcs[baseProc],1)
   combProcs[proc] = combProc
 combProcs['bkg_mass'] = 'bkg_mass' 
-flashggProcs = {}
+flashggProcs = odict()
 for key,item in combProcs.iteritems():
   flashggProcs[item] = key
 print flashggProcs
-procId = {}
+procId = odict()
 procId['bkg_mass'] = 1
 procCounter = 0
 for key,proc in combProcs.iteritems():
+  if proc == 'bkg_mass': continue
   procId[proc] = procCounter
+  #print proc, procCounter
   procCounter += -1
 bkgProcs = ['bkg_mass','bbH_hgg','tHq_hgg','tHW_hgg'] #what to treat as background
 #split procs vector
@@ -183,6 +171,11 @@ options.toSkip = options.toSkip.split(',')
 ###############################################################################
 #split cats
 options.cats = options.cats.split(',')
+inclusiveCats = list(options.cats) #need the list() otherwise NoTag will also be appended to options.cats
+inclusiveCats.append("NOTAG")
+if not options.justThisCat == "":
+  options.cats = [options.justThisCat]
+#here try to define things in global scope to prevent memory issues... probably won't work
 # cat types
 incCats   = [] #Untagged
 dijetCats = [] #VBF 
@@ -262,6 +255,7 @@ fileDetails = {}
 fileDetails['data_obs'] = [dataFile,dataWS,'roohist_data_mass_$CHANNEL']
 fileDetails['bkg_mass']  = [bkgFile,bkgWS,'CMS_hgg_$CHANNEL_%dTeV_bkgshape'%sqrts]
 for proc,combProc in combProcs.iteritems():
+  if 'bkg_mass'in combProc: continue
   fileDetails[combProc] = [sigFile.replace('$PROC',proc), sigWS, 'hggpdfsmrel_%dTeV_%s_$CHANNEL'%(sqrts,proc)]
 ###############################################################################
 
@@ -302,12 +296,8 @@ theorySystAbsScale['ggH_hgg'] =     [0.039,               0.0,                0.
 result ={}
 mass = inWS.var("CMS_hgg_mass")
 norm_factors_file = open('norm_factors_new.py','w')
-inclusiveCats = list(options.cats) #need the list() otherwise NoTag will also be appended to options.cats
-inclusiveCats.append("NOTAG")
-#here try to define things in global scope to prevent memory issues... probably won't work
 for proc in options.procs:
   if proc in bkgProcs: continue
-  inWS.setCurrentWorkspace(flashggProcs[proc])
   for name in theorySyst.keys(): #wh_130_13TeV_UntaggedTag_1_pdfWeights
     norm_factors_file.write("%s_%s = ["%(proc,name.replace("Weight",""))) 
     result["%s_%s"%(proc,name)] = []
@@ -446,6 +436,8 @@ def printTheorySysts():
               outFile.write('- ')
               continue
             else:
+              #FIXME hack to return to stage 0 style procs
+              p = p.split('_hgg_')[0] + '_hgg'
               value = 1+theorySystAbsScale[p][theorySystAbsScale['names'].index(syst)] 
               if asymmetric :
                 valueDown = 1+theorySystAbsScale[p][theorySystAbsScale['names'].index(syst.replace("_up","_down"))]
@@ -482,7 +474,6 @@ def getFlashggLineTheoryWeights(proc,cat,name,i,asymmetric,j=0,factor=1):
   weight_central = inWS.var("centralObjectWeight") 
   weight_sumW = inWS.var("sumW") 
   #data_nominal = inWS.data("%s_%d_13TeV_%s"%(proc,options.mass,cat))
-  inWS.setCurrentWorkspace(proc)
 
   if catsin in cat:
     data_nominal= inWS.data("%s_%d_13TeV_%s_pdfWeights"%(proc,options.mass,cat[:-2]), "%s_%d_13TeV_%s_pdfWeights"%(proc,options.mass,cat), cutforBDT[int(cat[-1])], cutforBDT[int(cat[-1])+1] )
@@ -596,9 +587,7 @@ def getFlashggLineTheoryEnvelope(proc,cat,name,details):
   nBins=80
   
   for iReplica in indices:
-    inWS.setCurrentWorkspace(proc)
-    
-    #data_nominal = r.RooDataset()
+
     if catsin in cat:
       data_nominal= inWS.data("%s_%d_13TeV_%s"%(proc,options.mass,cat[:-2]), "%s_%d_13TeV_%s"%(proc,options.mass,cat), cutforBDT[int(cat[-1])], cutforBDT[int(cat[-1])+1] )
     else: 
@@ -948,7 +937,7 @@ def interp1SigmaDataset(d_nom,d_down,d_up,factor=1.):
 def printPreamble():
   print '[INFO] Making Preamble...'
   outFile.write('CMS-HGG datacard for parametric model - 2015 %dTeV \n'%sqrts)
-  outFile.write('Auto-generated by flashggFinalFits/Datacard/makeParametricModelDatacardFLASHgg.py\n')
+  outFile.write('Auto-generated by flashggFinalFits/Datacard/makeStage1Datacard.py\n')
   outFile.write('Run with: combine\n')
   outFile.write('---------------------------------------------\n')
   outFile.write('imax *\n')
@@ -1113,12 +1102,6 @@ def getFlashggLine(proc,cat,syst):
   eventweight=False 
   print "===========> SYST", syst ," PROC ", proc , ", TAG ", cat
   
-  inWS.setCurrentWorkspace(flashggProcs[proc])
- 
-  #dataSYMMETRIC = r.RooDataset()
-  #dataDOWN = r.RooDataset()
-  #dataUP = r.RooDataset()
-  #dataNOMINAL = r.RooDataset()
   if catsin in cat:
     #dataSYMMETRIC =  inWS.data("%s_%d_13TeV_%s_%s"%(flashggProcs[proc],options.mass,cat,syst)) #Will exist if the systematic is a symmetric uncertainty not stored as event weights
     #dataDOWN =  inWS.data("%s_%d_13TeV_%s_%sDown01sigma"%(flashggProcs[proc],options.mass,cat,syst)) # will exist if teh systematic is an asymetric uncertainty not strore as event weights
@@ -1226,7 +1209,7 @@ def printFlashggSysts():
         for p in options.procs:
           if '%s:%s'%(p,c) in options.toSkip: continue
           #print "p,c is",p,c
-          if p in bkgProcs or ('pdfWeight' in flashggSyst and ('ggH_hgg' not in p and 'qqH_hgg' not in p)) or ('THU_ggH' in flashggSyst and p!='ggH_hgg'):
+          if p in bkgProcs or ('pdfWeight' in flashggSyst and ('ggH_hgg' not in p and 'qqH_hgg' not in p)) or ('THU_ggH' in flashggSyst and 'ggH_hgg' not in p):
             outFile.write('- ')
           else:
             outFile.write(getFlashggLine(p,c,flashggSyst))
@@ -1304,7 +1287,6 @@ def printVbfSysts():
     # now get relevant event counts
     for p in options.procs:
       if p in bkgProcs: continue
-      inWS.setCurrentWorkspace(flashggProcs[p])
       vbfMigrateToEvCount[p] = []
       vbfMigrateToEvCountNOMINAL[p] = []
       vbfMigrateToEvCountUP[p] = []
@@ -1315,13 +1297,13 @@ def printVbfSysts():
         sumNOMINAL=0
         sumDOWN=0
         for c in cats:
-          data =  inWS.data("%s_%d_13TeV_%s_%s"%(flashggProcs[p],options.mass,c,syst))
+          theData =  inWS.data("%s_%d_13TeV_%s_%s"%(flashggProcs[p],options.mass,c,syst))
           dataDOWN =  inWS.data("%s_%d_13TeV_%s_%sDown01sigma"%(flashggProcs[p],options.mass,c,syst))
           dataNOMINAL =  inWS.data("%s_%d_13TeV_%s"%(flashggProcs[p],options.mass,c))
           dataUP =  inWS.data("%s_%d_13TeV_%s_%sUp01sigma"%(flashggProcs[p],options.mass,c,syst))
           mass = inWS.var("CMS_hgg_mass")
           
-          if (data==None):
+          if (theData==None):
             if( (dataUP==None) or  (dataDOWN==None)) :
              if (dataNOMINAL.get().find("%sDown01sigma"%syst)):
               print "[INFO] VBF Systematic ", syst," is stored as up/down weights in nominal dataset"
@@ -1352,7 +1334,7 @@ def printVbfSysts():
           elif (adhoc) : 
             sumNOMINAL += dataNOMINAL.sumEntries()
           else : 
-            sum += data.sumEntries()
+            sum += theData.sumEntries()
             sumNOMINAL += dataNOMINAL.sumEntries()
         vbfMigrateToEvCount[p].append(sum)
         vbfMigrateToEvCountNOMINAL[p].append(sumNOMINAL)
@@ -1360,7 +1342,6 @@ def printVbfSysts():
         vbfMigrateToEvCountDOWN[p].append(sumDOWN)
     for p in options.procs:
       if p in bkgProcs: continue
-      inWS.setCurrentWorkspace(flashggProcs[p])
       vbfMigrateFromEvCount[p] = []
       vbfMigrateFromEvCountNOMINAL[p] = []
       vbfMigrateFromEvCountUP[p] = []
@@ -1371,7 +1352,7 @@ def printVbfSysts():
         sumNOMINAL=0
         sumDOWN=0
         for c in cats:
-          data =  inWS.data("%s_%d_13TeV_%s_%s"%(flashggProcs[p],options.mass,c,syst))
+          theData =  inWS.data("%s_%d_13TeV_%s_%s"%(flashggProcs[p],options.mass,c,syst))
           dataDOWN =  inWS.data("%s_%d_13TeV_%s_%sDown01sigma"%(flashggProcs[p],options.mass,c,syst))
           dataNOMINAL =  inWS.data("%s_%d_13TeV_%s"%(flashggProcs[p],options.mass,c))
           dataUP =  inWS.data("%s_%d_13TeV_%s_%sUp01sigma"%(flashggProcs[p],options.mass,c,syst))
@@ -1387,7 +1368,7 @@ def printVbfSysts():
           elif (adhoc) :
             sumNOMINAL += dataNOMINAL.sumEntries()
           else : 
-            sum += data.sumEntries()
+            sum += theData.sumEntries()
             sumNOMINAL += dataNOMINAL.sumEntries()
         vbfMigrateFromEvCount[p].append(sum)
         vbfMigrateFromEvCountUP[p].append(sumUP)
@@ -1577,7 +1558,7 @@ if options.submitSelf:
     f.write('touch %s.run\n'%os.path.abspath(f.name))
     f.write('cd %s\n'%os.getcwd())
     f.write('eval `scramv1 runtime -sh`\n')
-    execLine = '$CMSSW_BASE/src/flashggFinalFit/Datacard/makeParametricModelDatacardFLASHgg.py -i %s -o %s -p %s -c %s --photonCatScales %s --photonCatSmears %s --isMultiPdf --mass %d --justThisSyst %s'%(options.infilename,"jobs/"+options.outfilename+"."+syst,",".join(flashggProcs[p] for p in options.procs).replace(",bkg_mass",""),",".join(options.cats),",".join(options.photonCatScales),",".join(options.photonCatSmears),options.mass,syst )
+    execLine = '$CMSSW_BASE/src/flashggFinalFit/Datacard/makeStage1Datacard.py -i %s -o %s -p %s -c %s --photonCatScales %s --photonCatSmears %s --isMultiPdf --mass %d --justThisSyst %s'%(options.infilename,"jobs/"+options.outfilename+"."+syst,",".join(flashggProcs[p] for p in options.procs).replace(",bkg_mass",""),",".join(options.cats),",".join(options.photonCatScales),",".join(options.photonCatSmears),options.mass,syst )
     f.write('if (%s) then \n'%execLine);
     f.write('\t touch %s.done\n'%os.path.abspath(f.name))
     f.write('else\n')
@@ -1591,7 +1572,7 @@ if options.submitSelf:
     os.system('rm -f %s.log'%os.path.abspath(f.name))
     os.system('rm -f %s.err'%os.path.abspath(f.name))
     if (options.batch=="IC"):
-      os.system('qsub -q %s -o %s.log %s'%("hep.q",os.path.abspath(f.name),os.path.abspath(f.name)))
+      os.system('qsub -q %s -o %s.log -e %s.err %s'%("hep.q",os.path.abspath(f.name),os.path.abspath(f.name),os.path.abspath(f.name)))
     else:
       os.system('bsub -q %s -o %s.log %s'%("1nh",os.path.abspath(f.name),os.path.abspath(f.name)))
   continueLoop=1;

@@ -148,6 +148,7 @@ else: print '\n\n%s'%theCommand
 
 ####>>>>>>> Datacard
 '''
+theCommand=''
 theCommand += './runFinalFitsScripts.sh -i '+fullFileNames+' -p '+procs+' -f '+cats+' --flashggCatsIn ' + flashggCatsIn +' --ext '+ext+' --intLumi '+lumi +' --massList '+ masses +  ' --bs '+beamspot
 theCommand += ' --smears '+smears+' --scales '+scales+' --scalesCorr '+scalesCorr+' --scalesGlobal '+scalesGlobal+' --useSSF 1 --useDCB_1G 1 --cutforBDT '+cutforBDT
 
@@ -157,11 +158,13 @@ else: print '\n\n%s'%theCommand
 '''
  
 ####>>>>>>> Combine
+#Hardcode LSF batch although this WILL NOT run. We need a single job generated to run to cluster. 
+#We cannot submit jobs from cluster to itself. We didn't input LSF above because we will need to 
+#not to set batch for the previous steps to be run all at once. 
 
-./runFinalFitsScripts.sh -i $FILE -p $PROCS -f $CATS --ext $EXT --intLumi $INTLUMI --batch $BATCH --dataFile $DATA --isData --combineOnly
-#./runFinalFitsScripts.sh -i $FILE -p $PROCS -f $CATS --ext $EXT --intLumi $INTLUMI --batch $BATCH --dataFile $DATA --isData --combinePlotsOnly
+theCommand=''
+theCommand += './runFinalFitsScripts.sh -i '+fullFileNames+' -p '+procs+' -f '+cats+ ' --ext '+ext+' --intLumi '+lumi + ' --dataFile ' + datafileName + ' --batch LSF '+ ' --isData '
 
-theCommand += './runFinalFitsScripts.sh -i '+fullFileNames+' -p '+procs+' -f '+cats+ ' --ext '+ext+' --intLumi '+lumi + ' --dataFile ' + datafileName + ' --isData '
 
 if combinedOnly: theCommand += ' --combineOnly '
 if combinedPlotsOnly: theCommand += ' --combinePlotsOnly '

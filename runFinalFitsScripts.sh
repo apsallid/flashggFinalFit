@@ -253,11 +253,15 @@ fi
 
 cd Plots/FinalResults
 ls ../../Signal/$OUTDIR/CMS-HGG_*sigfit*oot  > tmp.txt
+replacestr="CMS-HGG_mva_13TeV_sigfit"
+replacestrfinal="CMS-HGG_sigfit_mva"
 while read p;
 do
 q=$(basename $p)
 cp $p ${q/$EXT/mva} 
+mv ${q/$EXT/mva} ${q/$replacestr/$replacestrfinal}
 echo " cp $p ${q/$EXT/mva} "
+echo " mv ${q/$EXT/mva} ${q/$replacestr/$replacestrfinal} "
 done < tmp.txt
 cp ../../Signal/$OUTDIR/CMS-HGG_sigfit_${EXT}.root CMS-HGG_mva_13TeV_sigfit.root
 cp ../../Background/CMS-HGG_multipdf_${EXT}${FAKE}.root CMS-HGG_mva_13TeV_multipdf${FAKE}.root
@@ -282,8 +286,8 @@ sed -i -e "s/\!INTLUMI\!/$INTLUMI/g"  allPlots_${EXT}${FAKE}.sh
 
 if [ $COMBINEPLOTSONLY == 0 ]; then
 echo "./combineHarvester.py -d combineHarvesterOptions13TeV_$EXT.dat -q $DEFAULTQUEUE --batch $BATCH --verbose"
-./combineHarvester.py -d combineHarvesterOptions13TeV_${EXT}${FAKE}.dat -q $DEFAULTQUEUE --batch $BATCH --verbose #--S0
-#./combineHarvester.py -d combineHarvesterOptions13TeV_${EXT}${FAKE}.dat -q $DEFAULTQUEUE --batch $BATCH --verbose --dryRun
+#./combineHarvester.py -d combineHarvesterOptions13TeV_${EXT}${FAKE}.dat -q $DEFAULTQUEUE --batch $BATCH --verbose #--S0
+./combineHarvester.py -d combineHarvesterOptions13TeV_${EXT}${FAKE}.dat -q $DEFAULTQUEUE --batch $BATCH --verbose --dryRun
 
 JOBS=999
 RUN=-1
