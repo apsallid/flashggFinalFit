@@ -163,7 +163,7 @@ else: print '\n\n%s'%theCommand
 #not to set batch for the previous steps to be run all at once. 
 
 theCommand=''
-theCommand += './runFinalFitsScripts.sh -i '+fullFileNames+' -p '+procs+' -f '+cats+ ' --ext '+ext+' --intLumi '+lumi + ' --dataFile ' + datafileName + ' --batch LSF '+ ' --isData '
+theCommand += './runFinalFitsScripts.sh -i '+fullFileNames+' -p '+procs+' -f '+cats+ ' --ext '+ext+' --intLumi '+lumi + ' --dataFile ' + datafileName + ' --batch LSF '+ ' --isData ' + ' --cutforBDT '+cutforBDT
 
 
 if combinedOnly: theCommand += ' --combineOnly '

@@ -285,9 +285,12 @@ sed -i -e "s/\!INTLUMI\!/$INTLUMI/g"  allPlots_${EXT}${FAKE}.sh
 
 
 if [ $COMBINEPLOTSONLY == 0 ]; then
-echo "./combineHarvester.py -d combineHarvesterOptions13TeV_$EXT.dat -q $DEFAULTQUEUE --batch $BATCH --verbose"
+echo "./combineHarvester.py -d combineHarvesterOptions13TeV_${EXT}${FAKE}.dat -q $DEFAULTQUEUE --batch $BATCH --verbose --dryRun"
 #./combineHarvester.py -d combineHarvesterOptions13TeV_${EXT}${FAKE}.dat -q $DEFAULTQUEUE --batch $BATCH --verbose #--S0
 ./combineHarvester.py -d combineHarvesterOptions13TeV_${EXT}${FAKE}.dat -q $DEFAULTQUEUE --batch $BATCH --verbose --dryRun
+
+significancefileext=`echo $CUTFORBDT | tr "," "_" `
+source combineJobs13TeV_fullStage1Test_DCB/ExpProfileLikelihood_m125.4Stat/All/sub_job0.sh > combine_significance_${significancefileext}.txt
 
 JOBS=999
 RUN=-1
@@ -355,7 +358,8 @@ echo "http://www.hep.ph.imperial.ac.uk/~lc1113/$OUTDIR"
 echo "or http://www.hep.ph.imperial.ac.uk/~lc1113/${OUTDIR}_${COUNTER}"
 
 fi
-cd -
+#Now, cd - is inside the sourced script above. 
+#cd -
 fi
 
 if [ $USER == xlcorpe ] || [ $USER == lc1113 ]; then
