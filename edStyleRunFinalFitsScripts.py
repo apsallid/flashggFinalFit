@@ -1,20 +1,46 @@
 #commands to send to the monolithic runFinalFits.sh script
+import os
 from os import system
 
+#Running command e.g:  
+#python edStyleRunFinalFitsScripts.py --cutforBDT '0.2,0.6,1.0' --runbkg False --runsignal False --rundatacard False --runcombine False --baseFilePath '/eos/cms/store/user/apsallid/HggAnalysis/input/STXS_stage1/RunIISummer16-2_4_1-25ns_Moriond17/workspaces/pergenprocess/' --workpath /afs/cern.ch/work/a/apsallid/CMS/Hgg/FinalFits_STXS_stage1/CMSSW_8_1_0/src/flashggFinalFit/Parallel --ext 'OptimizationStage1_DCB'
+
+from optparse import OptionParser
+from optparse import OptionGroup
+
+parser = OptionParser()
+parser.add_option("--cutforBDT",default="0.2,0.6,1.0")
+parser.add_option('--runbkg',default=False)
+parser.add_option("--runsignal",default=False)
+parser.add_option("--rundatacard",default=False)
+parser.add_option("--runcombine",default=False)
+parser.add_option("--baseFilePath", help="Path to input files from flashgg")
+parser.add_option("--workpath",help="The workpath where the job will run")
+parser.add_option("--ext",help="Extension")
+
+(opts,args) = parser.parse_args()
+
+#Switches
+#isSubmitted = False
 justPrint=False
+
+isSubmitted = True
+#isSubmitted = False
 #justPrint=True
-isSubmitted = False
-#isSubmitted = True
-signalFTestOnly=False
-#signalFTestOnly=True
-phoSystOnly = False
-#phoSystOnly = True
-sigFitOnly = False
-#sigFitOnly = True
+
+#----------------------------------
+#====>>>> Signal 
+#signalFTestOnly=False
+signalFTestOnly=True
+#phoSystOnly = False
+phoSystOnly = True
+#sigFitOnly = False
+sigFitOnly = True
 #sigPlotsOnly = False
 sigPlotsOnly = True
 
 #----------------------------------
+#====>>>> Background 
 #bkgfTestOnly = False
 bkgfTestOnly = True
 #bkgPlotsOnly = False
@@ -29,17 +55,19 @@ combinedPlotsOnly = False
 #combinedPlotsOnly = True
 
 
-print 'About to run signal scripts'
-print 'isSubmitted = %s, signalFTestOnly = %s, phoSystOnly = %s, sigFitOnly = %s, sigPlotsOnly = %s'%(str(isSubmitted), str(signalFTestOnly), str(phoSystOnly), str(sigFitOnly), str(sigPlotsOnly))
+#print 'isSubmitted = %s, signalFTestOnly = %s, phoSystOnly = %s, sigFitOnly = %s, sigPlotsOnly = %s'%(str(isSubmitted), str(signalFTestOnly), str(phoSystOnly), str(sigFitOnly), str(sigPlotsOnly))
 
 #setup files 
 #ext          = 'fullStage1Test'
-ext          = 'fullStage1Test_DCB'
+#ext          = 'fullStage1Test_DCB'
+#ext          = 'OptimizationStage1_DCB'
+ext = opts.ext
 print 'ext = %s'%ext
 #baseFilePath  = '/vols/cms/es811/FinalFits/ws_%s/'%ext
 #baseFilePath  = '/vols/cms/es811/FinalFits/ws_fullStage1Test/'
 #baseFilePath  = 'root://eoscms.cern.ch//eos/cms/store/user/apsallid/HggAnalysis/input/STXS_stage1/RunIISummer16-2_4_1-25ns_Moriond17/'
-baseFilePath  = '/afs/cern.ch/work/a/apsallid/CMS/Hgg/flashgg_STXS_stage1/CMSSW_8_0_28/src/flashgg/Systematics/scripts/output/'
+#baseFilePath  = '/afs/cern.ch/work/a/apsallid/CMS/Hgg/flashgg_STXS_stage1/CMSSW_8_0_28/src/flashgg/Systematics/scripts/output/'
+baseFilePath = opts.baseFilePath
 
 fileNames      = ['output_GluGluHToGG_M120_13TeV_amcatnloFXFX_pythia8_GG2H_0J.root','output_GluGluHToGG_M120_13TeV_amcatnloFXFX_pythia8_GG2H_1J_PTH_0_60.root','output_GluGluHToGG_M120_13TeV_amcatnloFXFX_pythia8_GG2H_1J_PTH_120_200.root','output_GluGluHToGG_M120_13TeV_amcatnloFXFX_pythia8_GG2H_1J_PTH_60_120.root','output_GluGluHToGG_M120_13TeV_amcatnloFXFX_pythia8_GG2H_1J_PTH_GT200.root','output_GluGluHToGG_M120_13TeV_amcatnloFXFX_pythia8_GG2H_GE2J_PTH_0_60.root','output_GluGluHToGG_M120_13TeV_amcatnloFXFX_pythia8_GG2H_GE2J_PTH_120_200.root','output_GluGluHToGG_M120_13TeV_amcatnloFXFX_pythia8_GG2H_GE2J_PTH_60_120.root','output_GluGluHToGG_M120_13TeV_amcatnloFXFX_pythia8_GG2H_GE2J_PTH_GT200.root','output_GluGluHToGG_M120_13TeV_amcatnloFXFX_pythia8_GG2H_VBFTOPO_JET3.root','output_GluGluHToGG_M120_13TeV_amcatnloFXFX_pythia8_GG2H_VBFTOPO_JET3VETO.root','output_GluGluHToGG_M123_13TeV_amcatnloFXFX_pythia8_GG2H_0J.root','output_GluGluHToGG_M123_13TeV_amcatnloFXFX_pythia8_GG2H_1J_PTH_0_60.root','output_GluGluHToGG_M123_13TeV_amcatnloFXFX_pythia8_GG2H_1J_PTH_120_200.root','output_GluGluHToGG_M123_13TeV_amcatnloFXFX_pythia8_GG2H_1J_PTH_60_120.root','output_GluGluHToGG_M123_13TeV_amcatnloFXFX_pythia8_GG2H_1J_PTH_GT200.root','output_GluGluHToGG_M123_13TeV_amcatnloFXFX_pythia8_GG2H_GE2J_PTH_0_60.root','output_GluGluHToGG_M123_13TeV_amcatnloFXFX_pythia8_GG2H_GE2J_PTH_120_200.root','output_GluGluHToGG_M123_13TeV_amcatnloFXFX_pythia8_GG2H_GE2J_PTH_60_120.root','output_GluGluHToGG_M123_13TeV_amcatnloFXFX_pythia8_GG2H_GE2J_PTH_GT200.root','output_GluGluHToGG_M123_13TeV_amcatnloFXFX_pythia8_GG2H_VBFTOPO_JET3.root','output_GluGluHToGG_M123_13TeV_amcatnloFXFX_pythia8_GG2H_VBFTOPO_JET3VETO.root','output_GluGluHToGG_M124_13TeV_amcatnloFXFX_pythia8_GG2H_0J.root','output_GluGluHToGG_M124_13TeV_amcatnloFXFX_pythia8_GG2H_1J_PTH_0_60.root','output_GluGluHToGG_M124_13TeV_amcatnloFXFX_pythia8_GG2H_1J_PTH_120_200.root','output_GluGluHToGG_M124_13TeV_amcatnloFXFX_pythia8_GG2H_1J_PTH_60_120.root','output_GluGluHToGG_M124_13TeV_amcatnloFXFX_pythia8_GG2H_1J_PTH_GT200.root','output_GluGluHToGG_M124_13TeV_amcatnloFXFX_pythia8_GG2H_GE2J_PTH_0_60.root','output_GluGluHToGG_M124_13TeV_amcatnloFXFX_pythia8_GG2H_GE2J_PTH_120_200.root','output_GluGluHToGG_M124_13TeV_amcatnloFXFX_pythia8_GG2H_GE2J_PTH_60_120.root','output_GluGluHToGG_M124_13TeV_amcatnloFXFX_pythia8_GG2H_GE2J_PTH_GT200.root','output_GluGluHToGG_M124_13TeV_amcatnloFXFX_pythia8_GG2H_VBFTOPO_JET3.root','output_GluGluHToGG_M124_13TeV_amcatnloFXFX_pythia8_GG2H_VBFTOPO_JET3VETO.root','output_GluGluHToGG_M125_13TeV_amcatnloFXFX_pythia8_GG2H_0J.root','output_GluGluHToGG_M125_13TeV_amcatnloFXFX_pythia8_GG2H_1J_PTH_0_60.root','output_GluGluHToGG_M125_13TeV_amcatnloFXFX_pythia8_GG2H_1J_PTH_120_200.root','output_GluGluHToGG_M125_13TeV_amcatnloFXFX_pythia8_GG2H_1J_PTH_60_120.root','output_GluGluHToGG_M125_13TeV_amcatnloFXFX_pythia8_GG2H_1J_PTH_GT200.root','output_GluGluHToGG_M125_13TeV_amcatnloFXFX_pythia8_GG2H_GE2J_PTH_0_60.root','output_GluGluHToGG_M125_13TeV_amcatnloFXFX_pythia8_GG2H_GE2J_PTH_120_200.root','output_GluGluHToGG_M125_13TeV_amcatnloFXFX_pythia8_GG2H_GE2J_PTH_60_120.root','output_GluGluHToGG_M125_13TeV_amcatnloFXFX_pythia8_GG2H_GE2J_PTH_GT200.root','output_GluGluHToGG_M125_13TeV_amcatnloFXFX_pythia8_GG2H_VBFTOPO_JET3.root','output_GluGluHToGG_M125_13TeV_amcatnloFXFX_pythia8_GG2H_VBFTOPO_JET3VETO.root','output_GluGluHToGG_M126_13TeV_amcatnloFXFX_pythia8_GG2H_0J.root','output_GluGluHToGG_M126_13TeV_amcatnloFXFX_pythia8_GG2H_1J_PTH_0_60.root','output_GluGluHToGG_M126_13TeV_amcatnloFXFX_pythia8_GG2H_1J_PTH_120_200.root','output_GluGluHToGG_M126_13TeV_amcatnloFXFX_pythia8_GG2H_1J_PTH_60_120.root','output_GluGluHToGG_M126_13TeV_amcatnloFXFX_pythia8_GG2H_1J_PTH_GT200.root','output_GluGluHToGG_M126_13TeV_amcatnloFXFX_pythia8_GG2H_GE2J_PTH_0_60.root','output_GluGluHToGG_M126_13TeV_amcatnloFXFX_pythia8_GG2H_GE2J_PTH_120_200.root','output_GluGluHToGG_M126_13TeV_amcatnloFXFX_pythia8_GG2H_GE2J_PTH_60_120.root','output_GluGluHToGG_M126_13TeV_amcatnloFXFX_pythia8_GG2H_GE2J_PTH_GT200.root','output_GluGluHToGG_M126_13TeV_amcatnloFXFX_pythia8_GG2H_VBFTOPO_JET3.root','output_GluGluHToGG_M126_13TeV_amcatnloFXFX_pythia8_GG2H_VBFTOPO_JET3VETO.root','output_GluGluHToGG_M127_13TeV_amcatnloFXFX_pythia8_GG2H_0J.root','output_GluGluHToGG_M127_13TeV_amcatnloFXFX_pythia8_GG2H_1J_PTH_0_60.root','output_GluGluHToGG_M127_13TeV_amcatnloFXFX_pythia8_GG2H_1J_PTH_120_200.root','output_GluGluHToGG_M127_13TeV_amcatnloFXFX_pythia8_GG2H_1J_PTH_60_120.root','output_GluGluHToGG_M127_13TeV_amcatnloFXFX_pythia8_GG2H_1J_PTH_GT200.root','output_GluGluHToGG_M127_13TeV_amcatnloFXFX_pythia8_GG2H_GE2J_PTH_0_60.root','output_GluGluHToGG_M127_13TeV_amcatnloFXFX_pythia8_GG2H_GE2J_PTH_120_200.root','output_GluGluHToGG_M127_13TeV_amcatnloFXFX_pythia8_GG2H_GE2J_PTH_60_120.root','output_GluGluHToGG_M127_13TeV_amcatnloFXFX_pythia8_GG2H_GE2J_PTH_GT200.root','output_GluGluHToGG_M127_13TeV_amcatnloFXFX_pythia8_GG2H_VBFTOPO_JET3.root','output_GluGluHToGG_M127_13TeV_amcatnloFXFX_pythia8_GG2H_VBFTOPO_JET3VETO.root','output_GluGluHToGG_M130_13TeV_amcatnloFXFX_pythia8_GG2H_0J.root','output_GluGluHToGG_M130_13TeV_amcatnloFXFX_pythia8_GG2H_1J_PTH_0_60.root','output_GluGluHToGG_M130_13TeV_amcatnloFXFX_pythia8_GG2H_1J_PTH_120_200.root','output_GluGluHToGG_M130_13TeV_amcatnloFXFX_pythia8_GG2H_1J_PTH_60_120.root','output_GluGluHToGG_M130_13TeV_amcatnloFXFX_pythia8_GG2H_1J_PTH_GT200.root','output_GluGluHToGG_M130_13TeV_amcatnloFXFX_pythia8_GG2H_GE2J_PTH_0_60.root','output_GluGluHToGG_M130_13TeV_amcatnloFXFX_pythia8_GG2H_GE2J_PTH_120_200.root','output_GluGluHToGG_M130_13TeV_amcatnloFXFX_pythia8_GG2H_GE2J_PTH_60_120.root','output_GluGluHToGG_M130_13TeV_amcatnloFXFX_pythia8_GG2H_GE2J_PTH_GT200.root','output_GluGluHToGG_M130_13TeV_amcatnloFXFX_pythia8_GG2H_VBFTOPO_JET3.root','output_GluGluHToGG_M130_13TeV_amcatnloFXFX_pythia8_GG2H_VBFTOPO_JET3VETO.root','output_VBFHToGG_M120_13TeV_amcatnlo_pythia8_VBF_PTJET1_GT200.root','output_VBFHToGG_M120_13TeV_amcatnlo_pythia8_VBF_REST.root','output_VBFHToGG_M120_13TeV_amcatnlo_pythia8_VBF_VBFTOPO_JET3.root','output_VBFHToGG_M120_13TeV_amcatnlo_pythia8_VBF_VBFTOPO_JET3VETO.root','output_VBFHToGG_M120_13TeV_amcatnlo_pythia8_VBF_VH2JET.root','output_VBFHToGG_M123_13TeV_amcatnlo_pythia8_VBF_PTJET1_GT200.root','output_VBFHToGG_M123_13TeV_amcatnlo_pythia8_VBF_REST.root','output_VBFHToGG_M123_13TeV_amcatnlo_pythia8_VBF_VBFTOPO_JET3.root','output_VBFHToGG_M123_13TeV_amcatnlo_pythia8_VBF_VBFTOPO_JET3VETO.root','output_VBFHToGG_M123_13TeV_amcatnlo_pythia8_VBF_VH2JET.root','output_VBFHToGG_M124_13TeV_amcatnlo_pythia8_VBF_PTJET1_GT200.root','output_VBFHToGG_M124_13TeV_amcatnlo_pythia8_VBF_REST.root','output_VBFHToGG_M124_13TeV_amcatnlo_pythia8_VBF_VBFTOPO_JET3.root','output_VBFHToGG_M124_13TeV_amcatnlo_pythia8_VBF_VBFTOPO_JET3VETO.root','output_VBFHToGG_M124_13TeV_amcatnlo_pythia8_VBF_VH2JET.root','output_VBFHToGG_M125_13TeV_amcatnlo_pythia8_VBF_PTJET1_GT200.root','output_VBFHToGG_M125_13TeV_amcatnlo_pythia8_VBF_REST.root','output_VBFHToGG_M125_13TeV_amcatnlo_pythia8_VBF_VBFTOPO_JET3.root','output_VBFHToGG_M125_13TeV_amcatnlo_pythia8_VBF_VBFTOPO_JET3VETO.root','output_VBFHToGG_M125_13TeV_amcatnlo_pythia8_VBF_VH2JET.root','output_VBFHToGG_M126_13TeV_amcatnlo_pythia8_VBF_PTJET1_GT200.root','output_VBFHToGG_M126_13TeV_amcatnlo_pythia8_VBF_REST.root','output_VBFHToGG_M126_13TeV_amcatnlo_pythia8_VBF_VBFTOPO_JET3.root','output_VBFHToGG_M126_13TeV_amcatnlo_pythia8_VBF_VBFTOPO_JET3VETO.root','output_VBFHToGG_M126_13TeV_amcatnlo_pythia8_VBF_VH2JET.root','output_VBFHToGG_M127_13TeV_amcatnlo_pythia8_VBF_PTJET1_GT200.root','output_VBFHToGG_M127_13TeV_amcatnlo_pythia8_VBF_REST.root','output_VBFHToGG_M127_13TeV_amcatnlo_pythia8_VBF_VBFTOPO_JET3.root','output_VBFHToGG_M127_13TeV_amcatnlo_pythia8_VBF_VBFTOPO_JET3VETO.root','output_VBFHToGG_M127_13TeV_amcatnlo_pythia8_VBF_VH2JET.root','output_VBFHToGG_M130_13TeV_amcatnlo_pythia8_VBF_PTJET1_GT200.root','output_VBFHToGG_M130_13TeV_amcatnlo_pythia8_VBF_REST.root','output_VBFHToGG_M130_13TeV_amcatnlo_pythia8_VBF_VBFTOPO_JET3.root','output_VBFHToGG_M130_13TeV_amcatnlo_pythia8_VBF_VBFTOPO_JET3VETO.root','output_VBFHToGG_M130_13TeV_amcatnlo_pythia8_VBF_VH2JET.root','output_WHToGG_M120_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLNU_PTV_0_150.root','output_WHToGG_M120_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLNU_PTV_150_250_0J.root','output_WHToGG_M120_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLNU_PTV_150_250_GE1J.root','output_WHToGG_M120_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLNU_PTV_GT250.root','output_WHToGG_M120_13TeV_amcatnloFXFX_madspin_pythia8_WH2HQQ_PTJET1_GT200.root','output_WHToGG_M120_13TeV_amcatnloFXFX_madspin_pythia8_WH2HQQ_REST.root','output_WHToGG_M120_13TeV_amcatnloFXFX_madspin_pythia8_WH2HQQ_VBFTOPO_JET3.root','output_WHToGG_M120_13TeV_amcatnloFXFX_madspin_pythia8_WH2HQQ_VBFTOPO_JET3VETO.root','output_WHToGG_M120_13TeV_amcatnloFXFX_madspin_pythia8_WH2HQQ_VH2JET.root','output_WHToGG_M123_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLNU_PTV_0_150.root','output_WHToGG_M123_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLNU_PTV_150_250_0J.root','output_WHToGG_M123_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLNU_PTV_150_250_GE1J.root','output_WHToGG_M123_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLNU_PTV_GT250.root','output_WHToGG_M123_13TeV_amcatnloFXFX_madspin_pythia8_WH2HQQ_PTJET1_GT200.root','output_WHToGG_M123_13TeV_amcatnloFXFX_madspin_pythia8_WH2HQQ_REST.root','output_WHToGG_M123_13TeV_amcatnloFXFX_madspin_pythia8_WH2HQQ_VBFTOPO_JET3.root','output_WHToGG_M123_13TeV_amcatnloFXFX_madspin_pythia8_WH2HQQ_VBFTOPO_JET3VETO.root','output_WHToGG_M123_13TeV_amcatnloFXFX_madspin_pythia8_WH2HQQ_VH2JET.root','output_WHToGG_M124_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLNU_PTV_0_150.root','output_WHToGG_M124_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLNU_PTV_150_250_0J.root','output_WHToGG_M124_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLNU_PTV_150_250_GE1J.root','output_WHToGG_M124_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLNU_PTV_GT250.root','output_WHToGG_M124_13TeV_amcatnloFXFX_madspin_pythia8_WH2HQQ_PTJET1_GT200.root','output_WHToGG_M124_13TeV_amcatnloFXFX_madspin_pythia8_WH2HQQ_REST.root','output_WHToGG_M124_13TeV_amcatnloFXFX_madspin_pythia8_WH2HQQ_VBFTOPO_JET3.root','output_WHToGG_M124_13TeV_amcatnloFXFX_madspin_pythia8_WH2HQQ_VBFTOPO_JET3VETO.root','output_WHToGG_M124_13TeV_amcatnloFXFX_madspin_pythia8_WH2HQQ_VH2JET.root','output_WHToGG_M125_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLNU_PTV_0_150.root','output_WHToGG_M125_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLNU_PTV_150_250_0J.root','output_WHToGG_M125_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLNU_PTV_150_250_GE1J.root','output_WHToGG_M125_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLNU_PTV_GT250.root','output_WHToGG_M125_13TeV_amcatnloFXFX_madspin_pythia8_WH2HQQ_PTJET1_GT200.root','output_WHToGG_M125_13TeV_amcatnloFXFX_madspin_pythia8_WH2HQQ_REST.root','output_WHToGG_M125_13TeV_amcatnloFXFX_madspin_pythia8_WH2HQQ_VBFTOPO_JET3.root','output_WHToGG_M125_13TeV_amcatnloFXFX_madspin_pythia8_WH2HQQ_VBFTOPO_JET3VETO.root','output_WHToGG_M125_13TeV_amcatnloFXFX_madspin_pythia8_WH2HQQ_VH2JET.root','output_WHToGG_M126_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLNU_PTV_0_150.root','output_WHToGG_M126_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLNU_PTV_150_250_0J.root','output_WHToGG_M126_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLNU_PTV_150_250_GE1J.root','output_WHToGG_M126_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLNU_PTV_GT250.root','output_WHToGG_M126_13TeV_amcatnloFXFX_madspin_pythia8_WH2HQQ_PTJET1_GT200.root','output_WHToGG_M126_13TeV_amcatnloFXFX_madspin_pythia8_WH2HQQ_REST.root','output_WHToGG_M126_13TeV_amcatnloFXFX_madspin_pythia8_WH2HQQ_VBFTOPO_JET3.root','output_WHToGG_M126_13TeV_amcatnloFXFX_madspin_pythia8_WH2HQQ_VBFTOPO_JET3VETO.root','output_WHToGG_M126_13TeV_amcatnloFXFX_madspin_pythia8_WH2HQQ_VH2JET.root','output_WHToGG_M127_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLNU_PTV_0_150.root','output_WHToGG_M127_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLNU_PTV_150_250_0J.root','output_WHToGG_M127_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLNU_PTV_150_250_GE1J.root','output_WHToGG_M127_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLNU_PTV_GT250.root','output_WHToGG_M127_13TeV_amcatnloFXFX_madspin_pythia8_WH2HQQ_PTJET1_GT200.root','output_WHToGG_M127_13TeV_amcatnloFXFX_madspin_pythia8_WH2HQQ_REST.root','output_WHToGG_M127_13TeV_amcatnloFXFX_madspin_pythia8_WH2HQQ_VBFTOPO_JET3.root','output_WHToGG_M127_13TeV_amcatnloFXFX_madspin_pythia8_WH2HQQ_VBFTOPO_JET3VETO.root','output_WHToGG_M127_13TeV_amcatnloFXFX_madspin_pythia8_WH2HQQ_VH2JET.root','output_WHToGG_M130_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLNU_PTV_0_150.root','output_WHToGG_M130_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLNU_PTV_150_250_0J.root','output_WHToGG_M130_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLNU_PTV_150_250_GE1J.root','output_WHToGG_M130_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLNU_PTV_GT250.root','output_WHToGG_M130_13TeV_amcatnloFXFX_madspin_pythia8_WH2HQQ_PTJET1_GT200.root','output_WHToGG_M130_13TeV_amcatnloFXFX_madspin_pythia8_WH2HQQ_REST.root','output_WHToGG_M130_13TeV_amcatnloFXFX_madspin_pythia8_WH2HQQ_VBFTOPO_JET3.root','output_WHToGG_M130_13TeV_amcatnloFXFX_madspin_pythia8_WH2HQQ_VBFTOPO_JET3VETO.root','output_WHToGG_M130_13TeV_amcatnloFXFX_madspin_pythia8_WH2HQQ_VH2JET.root','output_ZHToGG_M120_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLL_PTV_0_150.root','output_ZHToGG_M120_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLL_PTV_150_250_0J.root','output_ZHToGG_M120_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLL_PTV_150_250_GE1J.root','output_ZHToGG_M120_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLL_PTV_GT250.root','output_ZHToGG_M120_13TeV_amcatnloFXFX_madspin_pythia8_ZH2HQQ_PTJET1_GT200.root','output_ZHToGG_M120_13TeV_amcatnloFXFX_madspin_pythia8_ZH2HQQ_REST.root','output_ZHToGG_M120_13TeV_amcatnloFXFX_madspin_pythia8_ZH2HQQ_VBFTOPO_JET3.root','output_ZHToGG_M120_13TeV_amcatnloFXFX_madspin_pythia8_ZH2HQQ_VBFTOPO_JET3VETO.root','output_ZHToGG_M120_13TeV_amcatnloFXFX_madspin_pythia8_ZH2HQQ_VH2JET.root','output_ZHToGG_M123_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLL_PTV_0_150.root','output_ZHToGG_M123_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLL_PTV_150_250_0J.root','output_ZHToGG_M123_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLL_PTV_150_250_GE1J.root','output_ZHToGG_M123_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLL_PTV_GT250.root','output_ZHToGG_M123_13TeV_amcatnloFXFX_madspin_pythia8_ZH2HQQ_PTJET1_GT200.root','output_ZHToGG_M123_13TeV_amcatnloFXFX_madspin_pythia8_ZH2HQQ_REST.root','output_ZHToGG_M123_13TeV_amcatnloFXFX_madspin_pythia8_ZH2HQQ_VBFTOPO_JET3.root','output_ZHToGG_M123_13TeV_amcatnloFXFX_madspin_pythia8_ZH2HQQ_VBFTOPO_JET3VETO.root','output_ZHToGG_M123_13TeV_amcatnloFXFX_madspin_pythia8_ZH2HQQ_VH2JET.root','output_ZHToGG_M124_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLL_PTV_0_150.root','output_ZHToGG_M124_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLL_PTV_150_250_0J.root','output_ZHToGG_M124_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLL_PTV_150_250_GE1J.root','output_ZHToGG_M124_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLL_PTV_GT250.root','output_ZHToGG_M124_13TeV_amcatnloFXFX_madspin_pythia8_ZH2HQQ_PTJET1_GT200.root','output_ZHToGG_M124_13TeV_amcatnloFXFX_madspin_pythia8_ZH2HQQ_REST.root','output_ZHToGG_M124_13TeV_amcatnloFXFX_madspin_pythia8_ZH2HQQ_VBFTOPO_JET3.root','output_ZHToGG_M124_13TeV_amcatnloFXFX_madspin_pythia8_ZH2HQQ_VBFTOPO_JET3VETO.root','output_ZHToGG_M124_13TeV_amcatnloFXFX_madspin_pythia8_ZH2HQQ_VH2JET.root','output_ZHToGG_M125_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLL_PTV_0_150.root','output_ZHToGG_M125_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLL_PTV_150_250_0J.root','output_ZHToGG_M125_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLL_PTV_150_250_GE1J.root','output_ZHToGG_M125_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLL_PTV_GT250.root','output_ZHToGG_M125_13TeV_amcatnloFXFX_madspin_pythia8_ZH2HQQ_PTJET1_GT200.root','output_ZHToGG_M125_13TeV_amcatnloFXFX_madspin_pythia8_ZH2HQQ_REST.root','output_ZHToGG_M125_13TeV_amcatnloFXFX_madspin_pythia8_ZH2HQQ_VBFTOPO_JET3.root','output_ZHToGG_M125_13TeV_amcatnloFXFX_madspin_pythia8_ZH2HQQ_VBFTOPO_JET3VETO.root','output_ZHToGG_M125_13TeV_amcatnloFXFX_madspin_pythia8_ZH2HQQ_VH2JET.root','output_ZHToGG_M126_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLL_PTV_0_150.root','output_ZHToGG_M126_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLL_PTV_150_250_0J.root','output_ZHToGG_M126_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLL_PTV_150_250_GE1J.root','output_ZHToGG_M126_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLL_PTV_GT250.root','output_ZHToGG_M126_13TeV_amcatnloFXFX_madspin_pythia8_ZH2HQQ_PTJET1_GT200.root','output_ZHToGG_M126_13TeV_amcatnloFXFX_madspin_pythia8_ZH2HQQ_REST.root','output_ZHToGG_M126_13TeV_amcatnloFXFX_madspin_pythia8_ZH2HQQ_VBFTOPO_JET3.root','output_ZHToGG_M126_13TeV_amcatnloFXFX_madspin_pythia8_ZH2HQQ_VBFTOPO_JET3VETO.root','output_ZHToGG_M126_13TeV_amcatnloFXFX_madspin_pythia8_ZH2HQQ_VH2JET.root','output_ZHToGG_M127_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLL_PTV_0_150.root','output_ZHToGG_M127_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLL_PTV_150_250_0J.root','output_ZHToGG_M127_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLL_PTV_150_250_GE1J.root','output_ZHToGG_M127_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLL_PTV_GT250.root','output_ZHToGG_M127_13TeV_amcatnloFXFX_madspin_pythia8_ZH2HQQ_PTJET1_GT200.root','output_ZHToGG_M127_13TeV_amcatnloFXFX_madspin_pythia8_ZH2HQQ_REST.root','output_ZHToGG_M127_13TeV_amcatnloFXFX_madspin_pythia8_ZH2HQQ_VBFTOPO_JET3.root','output_ZHToGG_M127_13TeV_amcatnloFXFX_madspin_pythia8_ZH2HQQ_VBFTOPO_JET3VETO.root','output_ZHToGG_M127_13TeV_amcatnloFXFX_madspin_pythia8_ZH2HQQ_VH2JET.root','output_ZHToGG_M130_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLL_PTV_0_150.root','output_ZHToGG_M130_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLL_PTV_150_250_0J.root','output_ZHToGG_M130_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLL_PTV_150_250_GE1J.root','output_ZHToGG_M130_13TeV_amcatnloFXFX_madspin_pythia8_QQ2HLL_PTV_GT250.root','output_ZHToGG_M130_13TeV_amcatnloFXFX_madspin_pythia8_ZH2HQQ_PTJET1_GT200.root','output_ZHToGG_M130_13TeV_amcatnloFXFX_madspin_pythia8_ZH2HQQ_REST.root','output_ZHToGG_M130_13TeV_amcatnloFXFX_madspin_pythia8_ZH2HQQ_VBFTOPO_JET3.root','output_ZHToGG_M130_13TeV_amcatnloFXFX_madspin_pythia8_ZH2HQQ_VBFTOPO_JET3VETO.root','output_ZHToGG_M130_13TeV_amcatnloFXFX_madspin_pythia8_ZH2HQQ_VH2JET.root','output_ttHJetToGG_M120_13TeV_amcatnloFXFX_madspin_pythia8_TTH.root','output_ttHJetToGG_M123_13TeV_amcatnloFXFX_madspin_pythia8_TTH.root','output_ttHJetToGG_M124_13TeV_amcatnloFXFX_madspin_pythia8_TTH.root','output_ttHJetToGG_M125_13TeV_amcatnloFXFX_madspin_pythia8_TTH.root','output_ttHJetToGG_M126_13TeV_amcatnloFXFX_madspin_pythia8_TTH.root','output_ttHJetToGG_M127_13TeV_amcatnloFXFX_madspin_pythia8_TTH.root','output_ttHJetToGG_M130_13TeV_amcatnloFXFX_madspin_pythia8_TTH.root'] 
 
@@ -50,7 +78,10 @@ fullFileNames = fullFileNames[:-1]
 print 'fileNames = %s'%fullFileNames
 
 ######## ---------------------->>>>>>>>>>>>>>>>>>> BE CAREFUL HERE <<<<<<<<<<<------------------------
-datafileName = '/afs/cern.ch/work/a/apsallid/CMS/Hgg/FinalFits_STXS_stage1/CMSSW_8_1_0/src/flashggFinalFit/DoubleEG_2016.root'
+#I had to copy it locally, due to crash when read from eos
+os.system('cp %s/DoubleEG_2016.root .'%baseFilePath)
+datafileName = '%s/DoubleEG_2016.root'%os.getcwd()
+print datafileName
 
 #define processes and categories
 procs         = ''
@@ -59,8 +90,8 @@ for fileName in fileNames:
   procs += fileName.split('pythia8_')[1].split('.root')[0]
   procs += ','
 #procs = procs[:-1]
-#Overwrite just to check until all files are ready
-procs = 'GG2H_VBFTOPO_JET3VETO,GG2H_VBFTOPO_JET3'
+#For now to debug things
+procs = 'GG2H_VBFTOPO_JET3VETO,GG2H_VBFTOPO_JET3,VBF_VBFTOPO_JET3,VBF_VBFTOPO_JET3VETO'
 
 #This is the category we are interested to optimize. 
 #We can only check and optimize one category at a time. 
@@ -72,6 +103,7 @@ flashggCatsIn = 'RECO_VBFTOPO_JET3VETO'
 #number we want to. We start with two. 
 #cats          = 'RECO_0J,RECO_1J_PTH_0_60,RECO_1J_PTH_60_120,RECO_1J_PTH_120_200,RECO_1J_PTH_GT200,RECO_GE2J_PTH_0_60,RECO_GE2J_PTH_60_120,RECO_GE2J_PTH_120_200,RECO_GE2J_PTH_GT200,RECO_VBFTOPO_JET3VETO_0,RECO_VBFTOPO_JET3VETO_1,RECO_VBFTOPO_JET3,RECO_VH2JET,RECO_0LEP_PTV_0_150,RECO_0LEP_PTV_150_250_0J,RECO_0LEP_PTV_150_250_GE1J,RECO_0LEP_PTV_GT250,RECO_1LEP_PTV_0_150,RECO_1LEP_PTV_150_250_0J,RECO_1LEP_PTV_150_250_GE1J,RECO_1LEP_PTV_GT250,RECO_2LEP_PTV_0_150,RECO_2LEP_PTV_150_250_0J,RECO_2LEP_PTV_150_250_GE1J,RECO_2LEP_PTV_GT250,RECO_TTH_LEP,RECO_TTH_HAD'
 #cats          = 'RECO_VBFTOPO_JET3VETO,RECO_VBFTOPO_JET3'
+#We focus on the categories we want to optimize. 
 cats          = 'RECO_VBFTOPO_JET3VETO_0,RECO_VBFTOPO_JET3VETO_1'
 
 
@@ -108,66 +140,88 @@ massLow       = '120'
 massHigh      = '130'
 print 'masses %s'%masses
 #BDT bins
-cutforBDT = '0.2,0.6,1.0'
+cutforBDT = opts.cutforBDT
 print 'cutforBDT %s'%cutforBDT
 
-theCommand = ''
-if isSubmitted:
-  theCommand += ('cd /afs/cern.ch/work/a/apsallid/CMS/Hgg/FinalFits_STXS_stage1/CMSSW_8_1_0/src/flashggFinalFit/Signal\n')
-  theCommand += ('eval `scramv1 runtime -sh`\n')
-
-'''
-####>>>>>>>   SIGNAL
-#theCommand += './runSignalScripts.sh -i '+fullFileNames+' -p '+procs+' -f '+cats+' --flashggCatsIn ' + flashggCatsIn +' --ext '+ext+' --intLumi '+lumi+' --batch '+batch+' --massList '+masses+' --bs '+beamspot
-theCommand += './runSignalScripts.sh -i '+fullFileNames+' -p '+procs+' -f '+cats+' --flashggCatsIn ' + flashggCatsIn +' --ext '+ext+' --intLumi '+lumi+' --massList '+masses+ ' --mhLow ' + massLow + ' --mhHigh ' + massHigh  +  ' --bs '+beamspot
-#theCommand += ' --smears '+smears+' --scales '+scales+' --scalesCorr '+scalesCorr+' --scalesGlobal '+scalesGlobal+' --useSSF 1 --useDCB_1G 0'
-theCommand += ' --smears '+smears+' --scales '+scales+' --scalesCorr '+scalesCorr+' --scalesGlobal '+scalesGlobal+' --useSSF 1 --useDCB_1G 1 --cutforBDT '+cutforBDT
-
-if signalFTestOnly: theCommand += ' --fTestOnly'
-elif phoSystOnly: theCommand += ' --calcPhoSystOnly'
-elif sigFitOnly: theCommand += ' --sigFitOnly'
-elif sigPlotsOnly: theCommand += ' --sigPlotsOnly'
-if not justPrint: system(theCommand)
-else: print '\n\n%s'%theCommand
-'''
-
 ####>>>>>>>   BACKGROUND
+theCommand = ''
+if opts.runbkg == 'True':
+  if isSubmitted:
+    theCommand += ('cd $PWD/Background \n')
+    theCommand += ('mkdir -p outdir_%s/bkgfTest-Data \n'%ext)
+    theCommand += ('mkdir -p dat \n')
+  else : 
+    theCommand += ('cd /afs/cern.ch/work/a/apsallid/CMS/Hgg/FinalFits_STXS_stage1/CMSSW_8_1_0/src/flashggFinalFit/Background\n')
+    theCommand += ('eval `scramv1 runtime -sh`\n')
 
-'''
-theCommand += ('cd Background\n')
+  theCommand += './runBackgroundScripts.sh -i '+ datafileName +' -p '+procs+' -f '+cats+' --flashggCatsIn ' + flashggCatsIn +' --ext '+ext+' --intLumi '+lumi + ' --batch None --isData --cutforBDT '+ cutforBDT 
 
-theCommand += './runBackgroundScripts.sh -i '+ datafileName +' -p '+procs+' -f '+cats+' --flashggCatsIn ' + flashggCatsIn +' --ext '+ext+' --intLumi '+lumi + ' --batch None --isData --cutforBDT '+ cutforBDT 
+  if bkgfTestOnly: theCommand += ' --fTestOnly '
+  if bkgPlotsOnly: theCommand += ' --bkgPlotsOnly '
+  if not justPrint: system(theCommand)
+  else: print '\n\n%s'%theCommand
+  
 
-if bkgfTestOnly: theCommand += ' --fTestOnly '
-if bkgPlotsOnly: theCommand += ' --bkgPlotsOnly '
-if not justPrint: system(theCommand)
-else: print '\n\n%s'%theCommand
-'''
+
+
+####>>>>>>>   SIGNAL
+theCommand = ''
+if opts.runsignal == 'True':
+  if isSubmitted:
+    theCommand += ('cd $PWD/Signal\n')
+  else : 
+    theCommand += ('cd /afs/cern.ch/work/a/apsallid/CMS/Hgg/FinalFits_STXS_stage1/CMSSW_8_1_0/src/flashggFinalFit/Signal\n')
+    theCommand += ('eval `scramv1 runtime -sh`\n')
+
+  theCommand += './runSignalScripts.sh -i '+fullFileNames+' -p '+procs+' -f '+cats+' --flashggCatsIn ' + flashggCatsIn +' --ext '+ext+' --intLumi '+lumi+' --massList '+masses+ ' --mhLow ' + massLow + ' --mhHigh ' + massHigh  +  ' --bs '+beamspot
+  theCommand += ' --smears '+smears+' --scales '+scales+' --scalesCorr '+scalesCorr+' --scalesGlobal '+scalesGlobal+' --useSSF 1 --useDCB_1G 1 --cutforBDT '+cutforBDT
+
+  if signalFTestOnly: theCommand += ' --fTestOnly'
+  if phoSystOnly: theCommand += ' --calcPhoSystOnly'
+  if sigFitOnly: theCommand += ' --sigFitOnly'
+  if sigPlotsOnly: theCommand += ' --sigPlotsOnly'
+  if not justPrint: system(theCommand)
+  else: print '\n\n%s'%theCommand
+
+
 
 
 
 ####>>>>>>> Datacard
-'''
-theCommand=''
-theCommand += './runFinalFitsScripts.sh -i '+fullFileNames+' -p '+procs+' -f '+cats+' --flashggCatsIn ' + flashggCatsIn +' --ext '+ext+' --intLumi '+lumi +' --massList '+ masses +  ' --bs '+beamspot
-theCommand += ' --smears '+smears+' --scales '+scales+' --scalesCorr '+scalesCorr+' --scalesGlobal '+scalesGlobal+' --useSSF 1 --useDCB_1G 1 --cutforBDT '+cutforBDT
 
-if datacardOnly: theCommand += ' --datacardOnly'
-if not justPrint: system(theCommand)
-else: print '\n\n%s'%theCommand
-'''
+theCommand=''
+if opts.rundatacard == 'True':
+  if isSubmitted:
+    theCommand += ('cd $PWD\n')
+  else : 
+    theCommand += ('cd /afs/cern.ch/work/a/apsallid/CMS/Hgg/FinalFits_STXS_stage1/CMSSW_8_1_0/src/flashggFinalFit\n')
+    theCommand += ('eval `scramv1 runtime -sh`\n')
+
+  theCommand += './runFinalFitsScripts.sh -i '+fullFileNames+' -p '+procs+' -f '+cats+' --flashggCatsIn ' + flashggCatsIn +' --ext '+ext+' --intLumi '+lumi +' --massList '+ masses +  ' --bs '+beamspot
+  theCommand += ' --smears '+smears+' --scales '+scales+' --scalesCorr '+scalesCorr+' --scalesGlobal '+scalesGlobal+' --useSSF 1 --useDCB_1G 1 --cutforBDT '+cutforBDT
+
+  if datacardOnly: theCommand += ' --datacardOnly'
+  if not justPrint: system(theCommand)
+  else: print '\n\n%s'%theCommand
+
  
 ####>>>>>>> Combine
-#Hardcode LSF batch although this WILL NOT run. We need a single job generated to run to cluster. 
-#We cannot submit jobs from cluster to itself. We didn't input LSF above because we will need to 
-#not to set batch for the previous steps to be run all at once. 
-
 theCommand=''
-theCommand += './runFinalFitsScripts.sh -i '+fullFileNames+' -p '+procs+' -f '+cats+ ' --ext '+ext+' --intLumi '+lumi + ' --dataFile ' + datafileName + ' --batch LSF '+ ' --isData ' + ' --cutforBDT '+cutforBDT
+if opts.runcombine == 'True':
+  if isSubmitted:
+    theCommand += ('cd $PWD\n')
+  else : 
+    theCommand += ('cd /afs/cern.ch/work/a/apsallid/CMS/Hgg/FinalFits_STXS_stage1/CMSSW_8_1_0/src/flashggFinalFit\n')
+    theCommand += ('eval `scramv1 runtime -sh`\n')
+  #Hardcode LSF batch although this WILL NOT run. We need a single job generated to run to cluster. 
+  #We cannot submit jobs from cluster to itself. We didn't input LSF above because we will need to 
+  #not to set batch for the previous steps to be run all at once. 
+  theCommand += './runFinalFitsScripts.sh -i '+fullFileNames+' -p '+procs+' -f '+cats+ ' --ext '+ext+' --intLumi '+lumi + ' --dataFile ' + datafileName + ' --batch LSF '+ ' --isData ' + ' --cutforBDT '+cutforBDT
+
+  if combinedOnly: theCommand += ' --combineOnly '
+  if combinedPlotsOnly: theCommand += ' --combinePlotsOnly '
+  if not justPrint: system(theCommand)
+  else: print '\n\n%s'%theCommand
 
 
-if combinedOnly: theCommand += ' --combineOnly '
-if combinedPlotsOnly: theCommand += ' --combinePlotsOnly '
-if not justPrint: system(theCommand)
-else: print '\n\n%s'%theCommand
 

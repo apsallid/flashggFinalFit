@@ -144,6 +144,7 @@ if [ -e dat/newConfig_${EXT}.dat ]; then
 else
   if [ $FTESTONLY == 1 ]; then
     mkdir -p $OUTDIR/fTest
+    mkdir -p $OUTDIR/dat
     echo "=============================="
     echo "Running Signal F-Test"
     echo "-->Determine Number of gaussians"
@@ -210,7 +211,7 @@ else
   #CALCPHOSYSTONLY=0
   #SIGFITONLY=0
   #SIGPLOTSONLY=0
-	exit 1
+#	exit 1
 fi
 fi
 ####################################################

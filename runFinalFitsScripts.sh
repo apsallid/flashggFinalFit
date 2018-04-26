@@ -290,7 +290,7 @@ echo "./combineHarvester.py -d combineHarvesterOptions13TeV_${EXT}${FAKE}.dat -q
 ./combineHarvester.py -d combineHarvesterOptions13TeV_${EXT}${FAKE}.dat -q $DEFAULTQUEUE --batch $BATCH --verbose --dryRun
 
 significancefileext=`echo $CUTFORBDT | tr "," "_" `
-source combineJobs13TeV_fullStage1Test_DCB/ExpProfileLikelihood_m125.4Stat/All/sub_job0.sh > combine_significance_${significancefileext}.txt
+source combineJobs13TeV_${EXT}/ExpProfileLikelihood_m125.4Stat/All/sub_job0.sh > combine_significance_${significancefileext}.txt
 
 JOBS=999
 RUN=-1

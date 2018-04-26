@@ -16,7 +16,7 @@ int Normalization_13TeV::Init(int sqrtS){
 	 if (globeRt !=0){
 	 globeRt = globeRt+"/src/flashggFinalFit/Signal";
 	 }
-	// std::cout << " Form " << Form("buildSMHiggsSignalXSBR = imp.load_source('*', '%s/python/buildSMHiggsSignalXSBR.py')",globeRt.c_str()) << std::endl;
+	std::cout << " Form " << Form("buildSMHiggsSignalXSBR = imp.load_source('*', '%s/python/buildSMHiggsSignalXSBR.py')",globeRt.c_str()) << std::endl;
     if( ! TPython::Exec(Form("buildSMHiggsSignalXSBR = imp.load_source('*', '%s/python/buildSMHiggsSignalXSBR.py')",globeRt.c_str())) ) {
 	     std::cout<<  "[ERROR] Importing buildSMHiggsSignalXSBR from python failed. exit." << std::endl;
 			return 0;

@@ -114,16 +114,16 @@ float dataBeamSpotWidth_=3.5; //cm
 //=========================================================================
 //string referenceProc_="ggh";
 //string referenceProc_="GG2H";
-string referenceProc_="GG2H_0J";
+string referenceProc_="VBF_VBFTOPO_JET3VETO";
 //string referenceProcWV_="ggh";
 //string referenceProcWV_="GG2H";
-string referenceProcWV_="GG2H_0J";
+string referenceProcWV_="VBF_VBFTOPO_JET3VETO";
 //string referenceProcTTH_="tth";
 string referenceProcTTH_="TTH";
 //string referenceTagWV_="UntaggedTag_2";
-string referenceTagWV_="RECO_0J";
+string referenceTagWV_="RECO_VBFTOPO_JET3VETO_0";
 //string referenceTagRV_="UntaggedTag_2";
-string referenceTagRV_="RECO_0J";
+string referenceTagRV_="RECO_VBFTOPO_JET3VETO_0";
 vector<string> map_proc_;
 vector<string> map_cat_;
 vector<string> map_replacement_proc_RV_;
@@ -489,13 +489,13 @@ int main(int argc, char *argv[]){
   // need to make this configurable ?! -LC
   //referenceProc_="ggh";
   //referenceProc_="GG2H";
-  referenceProc_="GG2H_0J";
+  referenceProc_="VBF_VBFTOPO_JET3VETO";
   //referenceProcTTH_="tth";
   referenceProcTTH_="TTH";
   //referenceTagWV_="UntaggedTag_2"; // histest stats WV is ggh Untagged 3. 
-  referenceTagWV_="RECO_0J";
+  referenceTagWV_="RECO_VBFTOPO_JET3VETO_0";
   //referenceTagRV_="UntaggedTag_2"; // fairly low resolution tag even for ggh, more approprioate as te default than re-using the original tag.
-  referenceTagRV_="RECO_0J";
+  referenceTagRV_="RECO_VBFTOPO_JET3VETO_0";
   // are WV which needs to borrow should be taken from here
   
   // isFlashgg should now be the only option.
@@ -814,10 +814,14 @@ int main(int argc, char *argv[]){
 	int bdtregion = 0;
 	RooDataSet *data0;
 	//Check if we are on the category we wish to optimize
+	//This should always be true since this is category we run
+	//Other categories stay untouched, but could be added in the future 
+	//They shouldn't change the optimization. 
 	if ( flashggCatsIn_[0] == cat.substr(0,foundcat)   ){
 	  bdtregion = std::stoi( cat.substr(foundcat+1) );
 	  
-	  RooDataSet *dataFullin   = (RooDataSet*)inWS->data(Form("%s_%d_13TeV_%s",proc.c_str(),mh,flashggCatsIn_[0].c_str()));
+	  // RooDataSet *dataFullin   = (RooDataSet*)inWS->data( Form("%d%s",mass_,proc.c_str()), Form("%s_%d_13TeV_%s",proc.c_str(),mass_,flashggCatsIn_[0].c_str()));
+	  RooDataSet *dataFullin   = (RooDataSet*)inWS->data( Form("%s_%d_13TeV_%s",proc.c_str(),mh,flashggCatsIn_[0].c_str()));
 
 	  data0 =  reduceDataset(dataFullin, Form("%s_%d_13TeV_%s",proc.c_str(),mh,cat.c_str()) , cutforBDT_[bdtregion], cutforBDT_[bdtregion+1]);
 
@@ -862,13 +866,33 @@ int main(int argc, char *argv[]){
           
           //pick the dataset for the replacement proc and cat, reduce it (ie remove pdfWeights etc) ,
           //reweight for lumi, and then get the RV events only.
+          std::size_t foundrepcat = replancementCat.find_last_of('_');
+          int repcatnum = stoi( replancementCat.substr(foundrepcat+1) );
+
+          //==========================================================================
+          //==========================================================================
+          //In case of RV we will replace the low stat process with the relevant vbf process. 
+          //However, for the category we won't use the same replacement category as 
+          //WV (mgg shape should be IDENTICAL across all Tags in WV case) but the same 
+          //cat that the low stat process belongs. That's why we have the following line
+          //which is combined with line below dataRVRef->SetName(data0->GetName());. 
+          //That line was commented out since it keeps the name for the dataset of the 
+          //low stat process while this is not true since the process has been replaced. 
+          //We activate this line again and keep the initial dataset name. 
+          //==========================================================================
+          //==========================================================================
+          repcatnum = stoi( cat.substr(  (cat.find_last_of('_'))  +1) );
+
 					if(beamSpotReweigh_){
           data0Ref   = beamSpotReweigh(
 													rvwvDataset(
                         		intLumiReweigh(
                           		// reduceDataset(
                           		// 	(RooDataSet*)inWS->data(Form("%d%s",mh,replancementProc.c_str()), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str()))
-						       reduceDataset( (RooDataSet*)inWS->data(Form("%d%s",mh,replancementProc.c_str()), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str())), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str()) , cutforBDT_[0], cutforBDT_[ cutforBDT_.size() -1 ] )                             
+						       //reduceDataset( (RooDataSet*)inWS->data(Form("%d%s",mh,replancementProc.c_str()), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str())), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str()) , cutforBDT_[repcatnum], cutforBDT_[ repcatnum+1 ] )                             
+                                        // BE CAREFUL HERE: Look above why instead of using line above we use line below
+                                        reduceDataset( (RooDataSet*)inWS->data(Form("%d%s",mh,replancementProc.c_str()), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,flashggCatsIn_[0].c_str())), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,cat.c_str()) , cutforBDT_[repcatnum], cutforBDT_[repcatnum+1] )
+
                             ), "RV"
                           )
 											 );
@@ -878,7 +902,8 @@ int main(int argc, char *argv[]){
                         intLumiReweigh(
                           // reduceDataset(
                           // (RooDataSet*)inWS->data(Form("%d%s",mh,replancementProc.c_str()), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str()))
-				       reduceDataset( (RooDataSet*)inWS->data(Form("%d%s",mh,replancementProc.c_str()), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str())), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str()) , cutforBDT_[0], cutforBDT_[ cutforBDT_.size() -1 ] )                       
+				       // reduceDataset( (RooDataSet*)inWS->data(Form("%d%s",mh,replancementProc.c_str()), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str())), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str()) , cutforBDT_[0], cutforBDT_[ cutforBDT_.size() -1 ] )                       
+                                        reduceDataset( (RooDataSet*)inWS->data(Form("%d%s",mh,replancementProc.c_str()), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,flashggCatsIn_[0].c_str())), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,cat.c_str()) , cutforBDT_[repcatnum], cutforBDT_[repcatnum+1] )
                        ), "RV"
                       );
 					}
@@ -916,6 +941,9 @@ int main(int argc, char *argv[]){
 
          //pick the dataset for the replacement proc and cat, reduce it (ie remove pdfWeights etc) ,
          //reweight for lumi and then get the WV events only.
+          std::size_t foundrepcat = replancementCat.find_last_of('_');
+          int repcatnum = stoi( replancementCat.substr(foundrepcat+1) );
+
 				 if (beamSpotReweigh_){
          data0Ref   = beamSpotReweigh( 
 				               rvwvDataset(
@@ -923,7 +951,8 @@ int main(int argc, char *argv[]){
                           // reduceDataset(
                           //(RooDataSet*)inWS->data(Form("%s_%d_13TeV_%s",referenceProcWV_.c_str(),mh,referenceTagWV_.c_str()))
                             // (RooDataSet*)inWS->data(Form("%d%s",mh,replancementProc.c_str()), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str()))
-						       reduceDataset( (RooDataSet*)inWS->data(Form("%d%s",mh,replancementProc.c_str()), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str())), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str()) , cutforBDT_[0], cutforBDT_[ cutforBDT_.size() -1 ] )                         
+				       //Here as said above, for the WV we will use the same replacement cat. 
+						       reduceDataset( (RooDataSet*)inWS->data(Form("%d%s",mh,replancementProc.c_str()), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,flashggCatsIn_[0].c_str())), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str()) , cutforBDT_[repcatnum], cutforBDT_[ repcatnum+1 ] )                         
                        ), "WV"
                       )
 										);
@@ -933,7 +962,8 @@ int main(int argc, char *argv[]){
                           // reduceDataset(
                           //(RooDataSet*)inWS->data(Form("%s_%d_13TeV_%s",referenceProcWV_.c_str(),mh,referenceTagWV_.c_str()))
                           	// (RooDataSet*)inWS->data(Form("%d%s",mh,replancementProc.c_str()), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str()))
-						       reduceDataset( (RooDataSet*)inWS->data(Form("%d%s",mh,replancementProc.c_str()), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str())), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str()) , cutforBDT_[0], cutforBDT_[ cutforBDT_.size() -1 ] )                         
+						       // reduceDataset( (RooDataSet*)inWS->data(Form("%d%s",mh,replancementProc.c_str()), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str())), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str()) , cutforBDT_[repcatnum], cutforBDT_[  repcatnum+1 ] )                         
+						       reduceDataset( (RooDataSet*)inWS->data(Form("%d%s",mh,replancementProc.c_str()), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,flashggCatsIn_[0].c_str())), Form("%s_%d_13TeV_%s",replancementProc.c_str(),mh,replancementCat.c_str()) , cutforBDT_[repcatnum], cutforBDT_[ repcatnum+1 ] )                         
                        ), "WV"
                       );
 					}
