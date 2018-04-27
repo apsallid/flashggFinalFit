@@ -3,7 +3,7 @@ import os
 from os import system
 
 #Running command e.g:  
-#python edStyleRunFinalFitsScripts.py --cutforBDT '0.2,0.6,1.0' --runbkg False --runsignal False --rundatacard False --runcombine False --baseFilePath '/eos/cms/store/user/apsallid/HggAnalysis/input/STXS_stage1/RunIISummer16-2_4_1-25ns_Moriond17/workspaces/pergenprocess/' --workpath /afs/cern.ch/work/a/apsallid/CMS/Hgg/FinalFits_STXS_stage1/CMSSW_8_1_0/src/flashggFinalFit/Parallel --ext 'OptimizationStage1_DCB'
+#python edStyleRunFinalFitsScripts.py --cutforBDT '0.2,0.6,1.0' --runbkg False --runsignal False --rundatacard False --runcombine False --baseFilePath '/eos/cms/store/user/apsallid/HggAnalysis/input/STXS_stage1/RunIISummer16-2_4_1-25ns_Moriond17/workspaces/pergenprocess/' --workpath /afs/cern.ch/work/a/apsallid/CMS/Hgg/FinalFits_STXS_stage1/CMSSW_8_1_0/src/flashggFinalFit/Parallel --ext 'OptimizationStage1_DCB' --cats 'RECO_VBFTOPO_JET3VETO_0,RECO_VBFTOPO_JET3VETO_1' --flashggCatsIn 'RECO_VBFTOPO_JET3VETO'
 
 from optparse import OptionParser
 from optparse import OptionGroup
@@ -17,6 +17,8 @@ parser.add_option("--runcombine",default=False)
 parser.add_option("--baseFilePath", help="Path to input files from flashgg")
 parser.add_option("--workpath",help="The workpath where the job will run")
 parser.add_option("--ext",help="Extension")
+parser.add_option("--cats",help="We focus on the categories we want to optimize. ")
+parser.add_option("--flashggCatsIn",help="This is the category we are interested to optimize. We can only check and optimize one category at a time.")
 
 (opts,args) = parser.parse_args()
 
@@ -89,13 +91,14 @@ for fileName in fileNames:
   if 'M125' not in fileName: continue
   procs += fileName.split('pythia8_')[1].split('.root')[0]
   procs += ','
-#procs = procs[:-1]
+procs = procs[:-1]
 #For now to debug things
-procs = 'GG2H_VBFTOPO_JET3VETO,GG2H_VBFTOPO_JET3,VBF_VBFTOPO_JET3,VBF_VBFTOPO_JET3VETO'
+#procs = 'GG2H_VBFTOPO_JET3VETO,GG2H_VBFTOPO_JET3,VBF_VBFTOPO_JET3,VBF_VBFTOPO_JET3VETO'
 
 #This is the category we are interested to optimize. 
 #We can only check and optimize one category at a time. 
-flashggCatsIn = 'RECO_VBFTOPO_JET3VETO'
+#flashggCatsIn = 'RECO_VBFTOPO_JET3VETO'
+flashggCatsIn = opts.flashggCatsIn
 ########### IMPORTANT ###################################################
 #We won't create another variable for the number of categories we want 
 #to split the flashggCatsIn. Since the code always will loop through 
@@ -104,7 +107,8 @@ flashggCatsIn = 'RECO_VBFTOPO_JET3VETO'
 #cats          = 'RECO_0J,RECO_1J_PTH_0_60,RECO_1J_PTH_60_120,RECO_1J_PTH_120_200,RECO_1J_PTH_GT200,RECO_GE2J_PTH_0_60,RECO_GE2J_PTH_60_120,RECO_GE2J_PTH_120_200,RECO_GE2J_PTH_GT200,RECO_VBFTOPO_JET3VETO_0,RECO_VBFTOPO_JET3VETO_1,RECO_VBFTOPO_JET3,RECO_VH2JET,RECO_0LEP_PTV_0_150,RECO_0LEP_PTV_150_250_0J,RECO_0LEP_PTV_150_250_GE1J,RECO_0LEP_PTV_GT250,RECO_1LEP_PTV_0_150,RECO_1LEP_PTV_150_250_0J,RECO_1LEP_PTV_150_250_GE1J,RECO_1LEP_PTV_GT250,RECO_2LEP_PTV_0_150,RECO_2LEP_PTV_150_250_0J,RECO_2LEP_PTV_150_250_GE1J,RECO_2LEP_PTV_GT250,RECO_TTH_LEP,RECO_TTH_HAD'
 #cats          = 'RECO_VBFTOPO_JET3VETO,RECO_VBFTOPO_JET3'
 #We focus on the categories we want to optimize. 
-cats          = 'RECO_VBFTOPO_JET3VETO_0,RECO_VBFTOPO_JET3VETO_1'
+#cats          = 'RECO_VBFTOPO_JET3VETO_0,RECO_VBFTOPO_JET3VETO_1'
+cats = opts.cats
 
 
 print 'with processes: %s'%procs

@@ -172,7 +172,7 @@ for ct in `echo $CATS | tr "," "\n" `
 do
 echo "=========================================================================================="
 echo "./bin/makeBkgPlots -f $ct -l $ct --intLumi $INTLUMI $OPT -b CMS-HGG_multipdf_$EXT.root -d $OUTDIR/bkgPlots$DATAEXT -S 13 --isMultiPdf --useBinnedData  --doBands -c 0 --massStep 1.000 --nllTolerance 0.050 -L 100 -H 180 -o tmp_STXS_stage1.root"
-./bin/makeBkgPlots -f $ct -l $ct --intLumi $INTLUMI $OPT -b CMS-HGG_multipdf_$EXT.root -d $OUTDIR/bkgPlots$DATAEXT -S 13 --isMultiPdf --useBinnedData  --doBands -c 0 --massStep 1.000 --nllTolerance 0.050 -L 100 -H 180 -o tmp_STXS_stage1.root
+./bin/makeBkgPlots -f $ct -l $ct --intLumi $INTLUMI $OPT -b CMS-HGG_multipdf_$EXT.root -d $OUTDIR/bkgPlots$DATAEXT -S 13 --isMultiPdf --useBinnedData  --doBands -c 0 --massStep 1.000 --nllTolerance 0.050 -L 100 -H 180 -o tmp_STXS_stage1_$ct.root
 done
 
 #echo "./scripts/subBkgPlots.py -b CMS-HGG_multipdf_$EXT.root -d $OUTDIR/bkgPlots$DATAEXT -S 13 --isMultiPdf --useBinnedData  --doBands --massStep 1 $SIG -L 100 -H 180 -f $CATS -l $CATS --intLumi $INTLUMI $OPT --batch $BATCH -q $DEFAULTQUEUE "

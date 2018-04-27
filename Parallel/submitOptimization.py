@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #Running command
-#python submitOptimization.py --bdtfilename bdtboundaries.txt --bdtstep 0.01 --numofcats 2 --workpath /afs/cern.ch/work/a/apsallid/CMS/Hgg/FinalFits_STXS_stage1/CMSSW_8_1_0/src/flashggFinalFit/Parallel --runbkg True --runsignal False --rundatacard False --runcombine False --baseFilePath '/eos/cms/store/user/apsallid/HggAnalysis/input/STXS_stage1/RunIISummer16-2_4_1-25ns_Moriond17/workspaces/pergenprocess/' --ext 'OptimizationStage1_DCB'
+#python submitOptimization.py --bdtfilename bdtboundaries.txt --bdtstep 0.01 --numofcats 2 --workpath /afs/cern.ch/work/a/apsallid/CMS/Hgg/FinalFits_STXS_stage1/CMSSW_8_1_0/src/flashggFinalFit/Parallel --runbkg True --runsignal True --rundatacard True --runcombine True --baseFilePath '/eos/cms/store/user/apsallid/HggAnalysis/input/STXS_stage1/RunIISummer16-2_4_1-25ns_Moriond17/workspaces/pergenprocess/' --ext 'OptimizationStage1_DCB' --cats 'RECO_VBFTOPO_JET3VETO_0,RECO_VBFTOPO_JET3VETO_1' --flashggCatsIn 'RECO_VBFTOPO_JET3VETO' --queue '2nd' --dryRun True
 
 import numpy as np
 import os, sys
@@ -18,6 +18,10 @@ parser.add_option("--rundatacard",default=False)
 parser.add_option("--runcombine",default=False)
 parser.add_option("--baseFilePath", help="Path to input files from flashgg")
 parser.add_option("--ext",help="Extension")
+parser.add_option("--cats",help="We focus on the categories we want to optimize.")
+parser.add_option("--flashggCatsIn",help="This is the category we are interested to optimize. We can only check and optimize one category at a time.")
+parser.add_option("--queue",help="Which batch queue")
+parser.add_option('--dryRun',default=True)
 (options,args)=parser.parse_args()
 
 #make the grid giving as input the number of categories
@@ -55,7 +59,7 @@ def writePreamble(sub_file):
     sub_file.write('cd %s\n'%options.workpath)
     sub_file.write('eval `scramv1 runtime -sh`\n')
     sub_file.write('cd -\n')
-    #Copy latest files in workpath"
+    #Copy latest files in workpath
     sub_file.write('cp %s/../edStyleRunFinalFitsScripts.py . \n'%options.workpath)
     sub_file.write('cp %s/../runFinalFitsScripts.sh . \n'%options.workpath)
     sub_file.write('mkdir -p Background/bin \n')
@@ -63,15 +67,34 @@ def writePreamble(sub_file):
     sub_file.write('cp %s/../Background/bin/fTest $PWD/Background/bin/. \n'%options.workpath)
     sub_file.write('cp %s/../Background/bin/makeBkgPlots $PWD/Background/bin/. \n'%options.workpath)
     sub_file.write('mkdir -p Signal/bin \n')
+    sub_file.write('mkdir -p Signal/dat \n')
     sub_file.write('cp %s/../Signal/runSignalScripts.sh $PWD/Signal/. \n'%options.workpath)
-
+    sub_file.write('cp %s/../Signal/bin/* $PWD/Signal/bin/. \n'%options.workpath)
+    sub_file.write('mkdir -p Datacard \n')
+    sub_file.write('cp %s/../Datacard/makeStage1Datacard.py $PWD/Datacard/. \n'%options.workpath)
+    sub_file.write('mkdir -p Plots/FinalResults \n')
+    sub_file.write('cp %s/../Plots/FinalResults/combineHarvesterOptions13TeV_Template.dat $PWD/Plots/FinalResults/. \n'%options.workpath)
+    sub_file.write('cp %s/../Plots/FinalResults/allPlots_Template.sh $PWD/Plots/FinalResults/. \n'%options.workpath)
+    sub_file.write('cp %s/../Plots/FinalResults/combinePlotsOptions_Template.dat $PWD/Plots/FinalResults/. \n'%options.workpath)
+    sub_file.write('cp %s/../Plots/FinalResults/makeCombinePlots.py $PWD/Plots/FinalResults/. \n'%options.workpath)
+    sub_file.write('cp %s/../Plots/FinalResults/combineHarvester.py $PWD/Plots/FinalResults/. \n'%options.workpath)
 
 def writePostamble(sub_file, exec_line, line):
     
     #print "[INFO] writing to postamble"
     sub_file.write('%s \n'%exec_line)
-    sub_file.write('cp CMS-HGG_multipdf_mva.root %s/results/Bkg/Workspaces/CMS-HGG_mva_13TeV_multipdf_%s.root \n'%(options.workpath,line.replace(",", "_")))
-    sub_file.write('cp $PWD/Background/outdir_%s/bkgPlots-Data/bkgplot_*.png %s/results/Bkg/. \n'%(options.ext,options.workpath))
+    sub_file.write('cp $PWD/Background/CMS-HGG_multipdf_%s.root %s/results/Bkg/Workspaces/CMS-HGG_mva_13TeV_multipdf_%s.root \n'%(options.ext,options.workpath,line.replace(",", "_")))
+    for ct in options.cats.split(','):
+        sub_file.write('cp $PWD/Background/outdir_%s/bkgPlots-Data/bkgplot_%s.png %s/results/Bkg/bkgplot_%s_%s.png \n'%(options.ext,ct,options.workpath,ct,line.replace(",", "_")))
+        sub_file.write('cp $PWD/Background/outdir_%s/bkgPlots-Data/allPdfs_%s.png %s/results/Bkg/allPdfs_%s_%s.png \n'%(options.ext,ct,options.workpath,ct,line.replace(",", "_")))
+        sub_file.write('cp $PWD/Background/tmp_STXS_stage1_%s.root %s/results/Bkg/Workspaces/tmp_%s_%s_%s.root \n'%(ct,options.workpath,options.ext,ct,line.replace(",", "_")))
+
+    sub_file.write('cp $PWD/Signal/outdir_%s/sigplots/all.png %s/results/Signal/Plots/all_%s.png \n'%(options.ext,options.workpath,line.replace(",", "_")))
+    sub_file.write('cp $PWD/Signal/dat/photonCatSyst_%s.dat %s/results/Signal/dat/photonCatSyst_%s_%s.png \n'%(options.ext,options.workpath,options.ext,line.replace(",", "_")))
+    sub_file.write('cp $PWD/Signal/dat/newConfig_%s.dat %s/results/Signal/dat/newConfig_%s_%s.png \n'%(options.ext,options.workpath,options.ext,line.replace(",", "_")))
+
+    sub_file.write('cp $PWD/Plots/FinalResults/combine_significance_%s.txt %s/results/combine/. \n'%(line.replace(",", "_"),options.workpath))
+
     sub_file.close()
 
 print "------------------------------------------------"
@@ -92,7 +115,7 @@ print "------------------------------------------------"
 print "------------>> Creating jobs"
 print "------------------------------------------------"
 
-print "------------>> Preparing structure"
+print "------------>> Preparing structure locally in lxplus"
 
 os.system('mkdir -p %s/jobs'%options.workpath)
 os.system('mkdir -p %s/logfiles'%options.workpath)
@@ -101,6 +124,7 @@ os.system('mkdir -p %s/results/Signal/dat'%options.workpath)
 os.system('mkdir -p %s/results/Signal/combine'%options.workpath)
 os.system('mkdir -p %s/results/Bkg/Workspaces'%options.workpath)
 os.system('mkdir -p %s/files'%options.workpath)
+os.system('mkdir -p %s/results/combine'%options.workpath)
 
 os.system('chmod 755 %s/jobs'%options.workpath)
 os.system('chmod 755 %s/logfiles'%options.workpath)
@@ -126,10 +150,17 @@ with open(options.bdtfilename) as f:
         thejobfile = open('%s/jobs/sub%d.sh'%(options.workpath,counter),'w')
         writePreamble(thejobfile)
 
-        exec_line = 'python edStyleRunFinalFitsScripts.py --cutforBDT %s --runbkg %s --runsignal %s --rundatacard %s --runcombine %s --baseFilePath %s --workpath %s --ext %s'%(line,options.runbkg,options.runsignal,options.rundatacard,options.runcombine,options.baseFilePath,options.workpath,options.ext)
+        exec_line = 'python edStyleRunFinalFitsScripts.py --cutforBDT %s --runbkg %s --runsignal %s --rundatacard %s --runcombine %s --baseFilePath %s --workpath %s --ext %s --cats %s --flashggCatsIn %s'%(line,options.runbkg,options.runsignal,options.rundatacard,options.runcombine,options.baseFilePath,options.workpath,options.ext,options.cats,options.flashggCatsIn)
 
         os.system('chmod 755 %s/jobs/sub%d.sh'%(options.workpath,counter))
         print exec_line
         writePostamble(thejobfile,exec_line,line)
+
+        if options.dryRun == "False" : 
+            #Save logfiles if you have space
+            #os.system('bsub -q %s -o %s/logfiles/sub%d.log %s/jobs/sub%d.sh'%(options.queue,options.workpath,counter,options.workpath,counter))
+            os.system('bsub -q %s -o /tmp/junk %s/jobs/sub%d.sh'%(options.queue,options.workpath,counter))
+        else: 
+            print 'bsub -q %s -o /tmp/junk %s/jobs/sub%d.sh'%(options.queue,options.workpath,counter)
 
         counter =  counter+1

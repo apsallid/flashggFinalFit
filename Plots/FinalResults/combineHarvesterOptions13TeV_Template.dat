@@ -5,7 +5,7 @@ files=CMS-HGG_sigfit_mva_QQ2HLNU_PTV_150_250_0J_RECO_VBFTOPO_JET3VETO_0.root,CMS
 
 #############################################
 # This is for the optimization - Only one mass considered
-outDir=combineJobs13TeV_!EXT!/ExpProfileLikelihood_m125.4Stat/All                     method=ProfileLikelihoodStat expected=1 expectSignal=1 expectSignalMass=125.4 mhLow=125.4 mhHigh=125.4001 mhStep=0.1 jobs=1
+outDir=combineJobs13TeV_!EXT!/ExpProfileLikelihood_m125.4Stat/All                     method=ProfileLikelihoodStat expected=1 expectSignal=1 expectSignalMass=125.4 mhLow=125.4 mhHigh=125.4001 mhStep=0.1 jobs=1 opts=-S0
 
 
 
