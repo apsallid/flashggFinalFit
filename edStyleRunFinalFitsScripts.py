@@ -91,9 +91,9 @@ for fileName in fileNames:
   if 'M125' not in fileName: continue
   procs += fileName.split('pythia8_')[1].split('.root')[0]
   procs += ','
-procs = procs[:-1]
+#procs = procs[:-1]
 #For now to debug things
-#procs = 'GG2H_VBFTOPO_JET3VETO,GG2H_VBFTOPO_JET3,VBF_VBFTOPO_JET3,VBF_VBFTOPO_JET3VETO'
+procs = 'GG2H_VBFTOPO_JET3VETO,GG2H_VBFTOPO_JET3,VBF_VBFTOPO_JET3,VBF_VBFTOPO_JET3VETO'
 
 #This is the category we are interested to optimize. 
 #We can only check and optimize one category at a time. 
