@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #Running command
-#python submitOptimization.py --bdtfilename bdtboundaries.txt --bdtstep 0.01 --numofcats 2 --workpath /afs/cern.ch/work/a/apsallid/CMS/Hgg/FinalFits_STXS_stage1/CMSSW_8_1_0/src/flashggFinalFit/Parallel --runbkg False --runsignal True --rundatacard True --runcombine True --baseFilePath '/eos/cms/store/user/apsallid/HggAnalysis/input/STXS_stage1/RunIISummer16-2_4_1-25ns_Moriond17/workspaces/pergenprocess/' --ext 'OptimizationStage1_DCB' --cats 'RECO_VBFTOPO_JET3VETO_0,RECO_VBFTOPO_JET3VETO_1' --flashggCatsIn 'RECO_VBFTOPO_JET3VETO' --queue '2nd' --dryRun True --quick True
+#python submitOptimization.py --bdtfilename bdtboundaries.txt --bdtstep 0.01 --numofcats 2 --workpath /afs/cern.ch/work/a/apsallid/CMS/Hgg/FinalFits_STXS_stage1/CMSSW_8_1_0/src/flashggFinalFit/Parallel --runbkg False --runsignal True --rundatacard True --runcombine True --baseFilePath '/eos/cms/store/user/apsallid/HggAnalysis/input/STXS_stage1/RunIISummer16-2_4_1-25ns_Moriond17/workspaces/pergenprocess/' --ext 'OptimizationStage1_DCB' --cats 'RECO_VBFTOPO_JET3VETO_0,RECO_VBFTOPO_JET3VETO_1' --flashggCatsIn 'RECO_VBFTOPO_JET3VETO' --queue '2nd' --dryRun True --quick True --resubmit True
 
 import numpy as np
 import os, sys
@@ -23,6 +23,7 @@ parser.add_option("--flashggCatsIn",help="This is the category we are interested
 parser.add_option("--queue",help="Which batch queue")
 parser.add_option('--dryRun',default=True)
 parser.add_option('--quick',default=True, help="In case we have already run the bkg, no need to run it again.Also, set runbkg to False if this is True.")
+parser.add_option('--resubmit',default=False, help="In case of failed jobs, resubmit only those")
 (options,args)=parser.parse_args()
 
 #make the grid giving as input the number of categories
@@ -163,11 +164,23 @@ with open(options.bdtfilename) as f:
         print exec_line
         writePostamble(thejobfile,exec_line,line)
 
-        if options.dryRun == "False" : 
+        if options.dryRun == "False" and options.resubmit == "False": 
             #Save logfiles if you have space
             os.system('bsub -q %s -o %s/logfiles/sub%d.log %s/jobs/sub%d.sh'%(options.queue,options.workpath,counter,options.workpath,counter))
             #os.system('bsub -q %s -o /tmp/junk %s/jobs/sub%d.sh'%(options.queue,options.workpath,counter))
-        else: 
+        if options.dryRun == "False" and options.resubmit == "True": 
+            #Check if the current job has any error assosiated in the relevant combine file
+            if "Function evaluation error" in open( '%s/results/combine/combine_significance_%s.txt'%(options.workpath,line.replace(",", "_")) ).read(): 
+                print "Function evaluation error for job ", '%s/jobs/sub%d.sh'%(options.workpath,counter) , ". Resubmitting ..."
+            #Check if a significance value was printed
+            if "Significance:" not in open( '%s/results/combine/combine_significance_%s.txt'%(options.workpath,line.replace(",", "_")) ).read(): 
+                print "No significance was calculated for job ", '%s/jobs/sub%d.sh'%(options.workpath,counter) , ". Resubmitting ..."
+                #print '%s/results/combine/combine_significance_%s.txt'%(options.workpath,line.replace(",", "_")) 
+                #Save logfiles if you have space
+                os.system('bsub -q %s -o %s/logfiles/sub%d.log %s/jobs/sub%d.sh'%(options.queue,options.workpath,counter,options.workpath,counter))
+                #os.system('bsub -q %s -o /tmp/junk %s/jobs/sub%d.sh'%(options.queue,options.workpath,counter))
+                #print 'bsub -q %s -o /tmp/junk %s/jobs/sub%d.sh'%(options.queue,options.workpath,counter)
+        if options.dryRun == "True":     
             print 'bsub -q %s -o /tmp/junk %s/jobs/sub%d.sh'%(options.queue,options.workpath,counter)
 
         counter =  counter+1
