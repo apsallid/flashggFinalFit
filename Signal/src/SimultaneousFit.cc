@@ -680,7 +680,7 @@ void SimultaneousFit::runFits(int ncpu,string outdir, float epsilon){
     //latex->DrawLatex(0.6, 0.93-0.1*iColor,Form("#color[%d]{%s}",colorList[iColor],it->first.c_str()));
   }
   mg_perOrder->Draw("AP");
-  mg_perOrder->GetYaxis()->SetTitle("number of standard deviations from 0");
+  //mg_perOrder->GetYaxis()->SetTitle("number of standard deviations from 0");
   mg_perOrder->GetXaxis()->SetRangeUser(0,4);
   mg_perOrder->GetYaxis()->SetRangeUser(-5,5);
   mg_perOrder->GetXaxis()->SetLabelOffset(999);

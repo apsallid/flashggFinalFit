@@ -185,7 +185,7 @@ tthHadCat = []
 vhHadCat  = []
 #fill
 for cat in options.cats: #FIXME these will need updating as category definitions change
-  if "PTH" in cat or cat=='RECO_0J':
+  if "PTH" in cat or 'RECO_0J' in cat:
     incCats.append(cat)
   if "VBFTOPO" in cat:
     dijetCats.append(cat)
@@ -195,7 +195,7 @@ for cat in options.cats: #FIXME these will need updating as category definitions
      tthHadCat.append(cat)
   if "TTH" in cat:
      tthCats.append(cat)
-  if "VH2JET" in cat:
+  if "VHHAD" in cat:
      vhHadCat.append(cat)
 #summary 
 print "[INFO] flashgg cats:"
@@ -437,7 +437,7 @@ def printTheorySysts():
               continue
             else:
               #FIXME hack to return to stage 0 style procs
-              p = p.split('_hgg_')[0] + '_hgg'
+              p = p.split('_hgg')[0] + '_hgg'
               value = 1+theorySystAbsScale[p][theorySystAbsScale['names'].index(syst)] 
               if asymmetric :
                 valueDown = 1+theorySystAbsScale[p][theorySystAbsScale['names'].index(syst.replace("_up","_down"))]
@@ -1398,9 +1398,17 @@ def printVbfSysts():
           else:
             if c in vbfMigrateToCats[migIt]:
               if (asymmetric or asymweight) : 
-                UP=vbfMigrateToEvCountUP[p][migIt]/vbfMigrateToEvCountNOMINAL[p][migIt]
-                DOWN=vbfMigrateToEvCountDOWN[p][migIt]/vbfMigrateToEvCountNOMINAL[p][migIt]
-                outFile.write('%1.4g/%1.4g '%(DOWN,UP))
+                #FIXME getting zero divison errors here
+                print 'process is %s'%p
+                print 'cat is %s'%c
+                print 'migit is %s'%migIt
+                print 'up count is %1.3f'%vbfMigrateToEvCountUP[p][migIt]
+                print 'nominal count is %1.3f'%vbfMigrateToEvCountNOMINAL[p][migIt]
+                if vbfMigrateToEvCountNOMINAL[p][migIt] > 0.:
+                  UP=vbfMigrateToEvCountUP[p][migIt]/vbfMigrateToEvCountNOMINAL[p][migIt]
+                  DOWN=vbfMigrateToEvCountDOWN[p][migIt]/vbfMigrateToEvCountNOMINAL[p][migIt]
+                  outFile.write('%1.4g/%1.4g '%(DOWN,UP))
+                else: outFile.write('- ')
               elif (adhoc) : 
                 VAR=((vbfMigrateToEvCountNOMINAL[p][migIt]-thisUncert*vbfMigrateFromEvCountNOMINAL[p][migIt])/vbfMigrateToEvCountNOMINAL[p][migIt]) 
                 #print " TO categories : " , VAR
