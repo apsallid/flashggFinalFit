@@ -2,6 +2,8 @@ import glob
 import os
 import re 
 import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
 import operator
 import math
 from decimal import Decimal
@@ -94,3 +96,29 @@ c1.SaveAs('expsignificance_nosys.png', 'png')
 myfile = TFile( 'expsignificancenosys.root', 'RECREATE' )
 h1f.Write()
 myfile.Close()
+
+#print exsig.values()
+#print exsig.keys()
+
+bdtbound =  np.array([])
+for key in exsig.keys():
+    print key, key.split("_")[1] 
+    bdtbound = np.append(bdtbound,  key.split("_")[1]   )
+
+exsig = np.array(exsig.values())
+
+# Create a dataset:
+df=pd.DataFrame({'bdtbound' : bdtbound , 'exsig' : exsig})
+
+# plot
+fig = plt.figure()
+plt.plot( 'bdtbound', 'exsig', data=df, linestyle='none', marker='o')
+plt.title("Significance for RECO_VBFTOPO_JET3VETO")
+plt.xlabel("dijet_mva boundary")
+plt.ylabel("Significance")
+
+fig.savefig("Significance_RECO_VBFTOPO_JET3VETO.png")
+
+
+#plt.show()
+
