@@ -114,7 +114,7 @@ df=pd.DataFrame({'bdtbound' : bdtbound , 'exsig' : exsig})
 fig = plt.figure()
 plt.plot( 'bdtbound', 'exsig', data=df, linestyle='none', marker='o')
 plt.title("Significance for RECO_VBFTOPO_JET3VETO")
-plt.xlabel("dijet_mva boundary")
+plt.xlabel("dijet_mva cut")
 plt.ylabel("Significance")
 
 fig.savefig("Significance_RECO_VBFTOPO_JET3VETO.png")
