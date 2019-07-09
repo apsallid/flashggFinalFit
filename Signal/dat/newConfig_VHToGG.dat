@@ -1,0 +1,22 @@
+#proc cat nGausRV nGausWV
+GG2H VHLeptonicLooseTag 2 -1
+GG2H WHLeptonicTag 1 -1
+GG2H ZHLeptonicTag -1 -1 QQ2HLL ZHLeptonicTag
+QQ2HLL VHLeptonicLooseTag 4 -1
+QQ2HLL WHLeptonicTag 4 1
+QQ2HLL ZHLeptonicTag 4 -1
+QQ2HLNU VHLeptonicLooseTag 4 1
+QQ2HLNU WHLeptonicTag 4 -1
+QQ2HLNU ZHLeptonicTag -1 -1 QQ2HLL ZHLeptonicTag
+TTH VHLeptonicLooseTag 4 3
+TTH WHLeptonicTag 4 3
+TTH ZHLeptonicTag 4 -1
+VBF VHLeptonicLooseTag 1 -1 
+VBF WHLeptonicTag 4 3
+VBF ZHLeptonicTag -1 -1 QQ2HLL ZHLeptonicTag
+WH2HQQ VHLeptonicLooseTag 4 -1
+WH2HQQ WHLeptonicTag -1 -1 TTH WHLeptonicTag
+WH2HQQ ZHLeptonicTag -1 -1 QQ2HLL ZHLeptonicTag
+ZH2HQQ VHLeptonicLooseTag 2 -1
+ZH2HQQ WHLeptonicTag -1 -1 TTH WHLeptonicTag
+ZH2HQQ ZHLeptonicTag -1 -1 QQ2HLL ZHLeptonicTag
