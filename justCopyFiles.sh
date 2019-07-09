@@ -2,7 +2,8 @@
 #EXT="ws930"
 #EXT="newggHweights"
 #EXT="ReweighAndNewggHweights"
-EXT="TestVoigtian"
+#EXT="TestVoigtian"
+EXT="VHToGG"
 OUTDIR="outdir_${EXT}"
 
 if [ ! -d "Signal/$OUTDIR" ]; then
