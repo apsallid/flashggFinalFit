@@ -81,6 +81,7 @@ with open(options.input) as i:
     #print line
     if "intLumi" in line: lumi=float(line[line.find("value")+6:])
     if "pdfWeight" in line : continue 
+    if "Hadronic" in line : continue 
     if "NoTag" in line : continue 
     line=line.replace("Tag_","Tag ")
     line=line.replace("Tag"," Tag")
@@ -453,7 +454,7 @@ for t in tagList :
   naiveExpecteds.append(naiveExp)
 
 # now do total line
-t=="Total" 
+t="Total" 
 lineCat=t+" &   " 
 line=""
 for p in procList:
@@ -660,7 +661,7 @@ l1 = r.TLegend(0.0,0.94,1.0,0.98)
 lExtra = r.TLegend(0.0,0.90,1.0,0.94)
 l2 = r.TLegend(0.0,0.9,1.0,0.95)
 l3 = r.TLegend(0.0,0.9,1.0,0.95)
-nProcLim = 6
+nProcLim = 3
 if numProcs<=nProcLim:
   l1.SetNColumns(numProcs)
 else:
@@ -803,12 +804,14 @@ for ih in options.order.split(":")[1].split(","):
  if not doTotals and ih=="Total": continue
  lat.SetTextAlign(31)
  tagLabel = ih.replace("TTH","ttH")
- tagLabel = tagLabel.replace(" Tag","")
+ #tagLabel = tagLabel.replace(" Tag","")
  tagLabel = tagLabel.replace("Met","MET")
- lat.DrawLatex(0.14,0.82-offset,tagLabel)
+ #lat.DrawLatex(0.14,0.82-offset,tagLabel)
+ lat.DrawLatex(0.14,0.71-offset,tagLabel)
  evtCount = "#color[0]{%.1f expected events}"%Arr[ih]["Total"]
  lat.SetTextAlign(11)
- lat.DrawLatex(0.16,0.82-offset,evtCount)
+ #lat.DrawLatex(0.16,0.82-offset,evtCount)
+ lat.DrawLatex(0.16,0.71-offset,evtCount)
  if doTotals: offset=offset+((0.82-0.05)/len(tagList))
  else: offset=offset+((0.82-0.05)/(len(tagList)-1))
 
