@@ -11,7 +11,7 @@ QQ2HLNU ZHLeptonicTag -1 -1 QQ2HLL ZHLeptonicTag
 TTH VHLeptonicLooseTag 4 3
 TTH WHLeptonicTag 4 3
 TTH ZHLeptonicTag 4 -1
-VBF VHLeptonicLooseTag 1 -1 
+VBF VHLeptonicLooseTag 1 -1
 VBF WHLeptonicTag 4 3
 VBF ZHLeptonicTag -1 -1 QQ2HLL ZHLeptonicTag
 WH2HQQ VHLeptonicLooseTag 4 -1

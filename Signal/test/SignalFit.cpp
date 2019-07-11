@@ -444,11 +444,11 @@ int main(int argc, char *argv[]){
   // reference details for low stats cats
   // need to make this configurable ?! -LC
   //referenceProc_="ggh";
-  referenceProc_="GG2H";
+  referenceProc_="TTH";
   //referenceProcTTH_="tth";
   referenceProcTTH_="TTH";
-  referenceTagWV_="UntaggedTag_2"; // histest stats WV is ggh Untagged 3. 
-  referenceTagRV_="UntaggedTag_2"; // fairly low resolution tag even for ggh, more approprioate as te default than re-using the original tag.
+  referenceTagWV_="WHLeptonicTag"; // histest stats WV is TTH, WHLeptonicTag. 
+  referenceTagRV_="VHLeptonicLooseTag"; // fairly low resolution tag even for ggh, more approprioate as te default than re-using the original tag.
   // are WV which needs to borrow should be taken from here
   
   // isFlashgg should now be the only option.
@@ -790,7 +790,7 @@ int main(int argc, char *argv[]){
 
           dataRVRef=(RooDataSet*) data0Ref->Clone();
           std::cout << "[INFO] RV: replacing dataset for FITTING with new one ("<< *dataRVRef <<"), but keeping name of "<< *data0 << std::endl;
-        //  dataRVRef->SetName(data0->GetName());
+          dataRVRef->SetName(data0->GetName());
         } else { // if the dataset was fine to begin with, make the reference dataset the original
           dataRVRef=(RooDataSet*) dataRV->Clone();
         }
@@ -843,7 +843,7 @@ int main(int argc, char *argv[]){
 
           dataWVRef = (RooDataSet*) data0Ref->Clone();
           std::cout << "[INFO] WV: replacing dataset for FITTING with new one ("<< *dataWVRef <<"), but keeping name of "<< *data0 << std::endl;
-         // dataWVRef->SetName(data0->GetName());
+          dataWVRef->SetName(data0->GetName());
         } else {
           dataWVRef=(RooDataSet*) dataWV->Clone();
         }

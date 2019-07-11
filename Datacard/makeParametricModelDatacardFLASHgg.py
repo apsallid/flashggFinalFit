@@ -302,7 +302,7 @@ result ={}
 mass = inWS.var("CMS_hgg_mass")
 norm_factors_file = open('norm_factors_new.py','w')
 inclusiveCats = list(options.cats) #need the list() otherwise NoTag will also be appended to options.cats
-inclusiveCats.append("NoTag")
+#inclusiveCats.append("NoTag")
 for proc in options.procs:
   if proc in bkgProcs: continue
   for name in theorySyst.keys(): #wh_130_13TeV_UntaggedTag_1_pdfWeights
