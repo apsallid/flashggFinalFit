@@ -484,7 +484,8 @@ int main(int argc, char *argv[]){
       ++iterator) {
         RooDataSet *dataset = dynamic_cast<RooDataSet *>( *iterator );
         if (dataset) {
-	        std::cout <<  dataset->GetName() << "," << dataset->sumEntries() << std::endl;
+	        std::cout <<  dataset->GetName() << "," << dataset->sumEntries() <<std::endl;
+	        // std::cout <<  dataset->GetName() << "," << dataset->sumEntries() << "," << dataset->numEntries() <<std::endl;
         }
 		}
 		return 1;
@@ -750,7 +751,7 @@ int main(int argc, char *argv[]){
         if (nEntriesRV < 200 || sEntriesRV < 0 || ( userSkipRV)){
           std::cout << "[INFO] too few entries to use for fits in RV! nEntries " << nEntriesRV << " sumEntries " << sEntriesRV << "userSkipRV " << userSkipRV<< std::endl;
           isProblemCategory=true;
-          
+
           int thisProcCatIndex = getIndexOfReferenceDataset(proc,cat);
           
           string replancementProc = map_replacement_proc_RV_[thisProcCatIndex];
