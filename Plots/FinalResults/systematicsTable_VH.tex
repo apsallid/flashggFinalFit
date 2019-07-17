@@ -1,0 +1,315 @@
+\documentclass[12pt]{article}
+\usepackage{amssymb}
+\usepackage{epsfig}
+\usepackage{rotating}
+\usepackage{comment}
+\usepackage{color}
+\usepackage{multirow}      
+\usepackage{multicol}   
+\newcommand*{\dittoclosing}{--- \raisebox{-0.5ex}{''} ---}
+% -------------------------------------------------------------------------------
+%       set page size
+\jot = 1.5ex
+\evensidemargin 0.0in \oddsidemargin 0.0in \topmargin -0.2in \textwidth 6.4in
+\textheight 9.0in
+\def\baselinestretch{1.0}
+\parskip 5pt plus 1pt
+% -------------------------------------------------------------------------------
+\catcode`\@=11
+\def\@normalsize{
+   \@setsize\normalsize{15pt}\xiipt\@xiipt
+   \abovedisplayskip 14pt plus3pt minus3pt%
+   \belowdisplayskip \abovedisplayskip
+   \abovedisplayshortskip  \z@ plus3pt%
+   \belowdisplayshortskip  7pt plus3.5pt minus0pt
+}
+\def\section{\@startsection{section}{1}{\z@}
+   {3.5ex plus 1ex minus .2ex}{2.3ex plus .2ex}{\large\bf}
+}
+\def\thesection{\arabic{section}}
+\def\thesubsection{\arabic{section}.\arabic{subsection}}
+\def\ps@headings{
+   \def\@oddfoot{}\def\@evenfoot{}
+   \def\@oddhead{
+      \hbox{}\hfill
+      \makebox[.5\textwidth]{\raggedright\ignorespaces --\thepage{}-- \hfill }
+   }
+   \def\@evenhead{\@oddhead}
+   \def\subsectionmark##1{\markboth{##1}{}}
+}%
+\ps@headings
+\def\titlepage{
+   \@restonecolfalse\if@twocolumn\@restonecoltrue\onecolumn
+   \else \newpage \fi \thispagestyle{empty}\c@page\z@
+   \def\thefootnote{\fnsymbol{footnote}}
+}
+\def\endtitlepage{
+   \if@restonecol\twocolumn \else  \fi
+   \def\thefootnote{\arabic{footnote}}
+   \setcounter{footnote}{0}
+}%
+\catcode`@=12
+\relax
+% -------------------------------------------------------------------------------
+\newcommand{\newc}{\newcommand}
+\newcommand{\johnadd}[1]{\fbox{\parbox{\textwidth}{#1}}}
+\newc{\ra}{\rightarrow}
+\newc{\lra}{\leftrightarrow}
+\newc{\beq}{\begin{equation}}
+\newc{\be}{\begin{equation}}
+\newc{\eeq}{\end{equation}}
+\newc{\ee}{\end{equation}}
+\newc{\bea}{\begin{eqnarray}}
+\newc{\eea}{\end{eqnarray}}
+\def\eps{\epsilon}
+\def\la{\lambda}
+\newc{\ome}{\omega}
+\newc{\ba}{\begin{eqnarray}}
+\newc{\ea}{\end{eqnarray}}
+\def\tila{\tilde{\alpha}}
+\def\simlt{\stackrel{<}{{}_\sim}}
+\def\simgt{\stackrel{>}{{}_\sim}}
+\def\ie{\hbox{\it i.e.}{}}
+\def\etc{\hbox{\it etc.}{}}
+\def\eg{\hbox{\it e.g.}{}}
+\def\cf{\hbox{\it cf.}{}}
+\def\etal{\hbox{\it et al.}}
+\def\NPB#1#2#3{Nucl. Phys.  { B#1}  (19#2)  #3}
+\def\PLB#1#2#3{Phys. Lett. { B#1} (19#2) #3}
+\def\PLBold#1#2#3{Phys. Lett. {#1B} (19#2) #3}
+\def\PRD#1#2#3{Phys. Rev. { C#1} (19#2) #3}
+\def\PRL#1#2#3{Phys. Rev. Lett. {#1} (19#2) #3}
+\def\PRT#1#2#3{Phys. Rep. { C#1} (19#2) #3}
+\def\ARAA#1#2#3{Ann. Rev. Astron. Astrophys. {#1} (19#2) #3}
+\def\ARNP#1#2#3{Ann. Rev. Nucl. Part. Sci. {#1} (19#2) #3}
+\def\MODA#1#2#3{Mod. Phys. Lett. { A#1} (19#2) #3}
+\newcommand{\e}{\varepsilon}
+\newcommand{\eb}{\bar\varepsilon}
+\renewcommand{\l}{\varepsilon}
+\newcommand{\lb}{{\varepsilon}}
+\newc{\dsty}{\displaystyle}
+% -------------------------------------------------------------------------------
+\begin{document}
+\def\firstpage#1#2#3#4#5#6{
+   \begin{titlepage}
+      \nopagebreak
+      \title{
+         \begin{flushright}
+         \vspace*{-0.8in}
+%         { NESTOR NOTE: 025.2008 \\ Prepared by A. Psallidas }
+         \end{flushright}
+	 %\ \\ \ \\ \ \\  \begin{center} {\large\bf  FIRST DRAFT \\ PRELIMINARY NOT FOR DISTRIBUTION} \hspace{8cm}\end{center}
+         \vfill {#3}
+      }
+      \author{\large #4 \\[1.0cm] #5}
+      \maketitle
+      \vskip -7mm
+      \nopagebreak
+%      \begin{abstract}
+%         {\noindent #6}
+%      \end{abstract}
+      \vfill
+      \begin{flushleft}
+	%         \rule{16.1cm}{0.2mm}\\[-3mm]
+      \end{flushleft}
+      \thispagestyle{empty}
+   \end{titlepage}}
+\vskip -7cm
+\date{}%
+\firstpage{3118}{IC/95/34}%
+{\large\bf VH Tables}%
+%
+{-.}%
+%
+{\normalsize\sl -\\[2.5mm]}%
+%
+{\it }
+---.%
+
+
+\newpage
+
+
+
+%%
+%
+%
+%
+%
+%
+
+% FOR THE VH TAGS
+
+\begin{sidewaystable}
+\resizebox{\linewidth}{!}{%
+    \centering
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{tabular}{  c | c |  c | c }
+\hline
+\hline
+Systematic & Datacard value & Uncertainty (\%) & Official analysis in VHTag categories (\%) \\ 
+\hline
+\hline
+Trigger efficiency &  CMS\_hgg\_TriggerWeight  &  0.1 &  0.1 - 0.2 \\
+Photon preselection &  CMS\_hgg\_PreselSF  &  0.3 - 0.5  &  0.2 - 0.3  \\
+Electron Veto &  CMS\_hgg\_electronVetoSF  &  0.2 - 0.3  &  0.2 - 0.2  \\
+
+Vertex finding efficiency &  CMS\_hgg\_nuisance\_deltafracright  &  2.0  &  2.0 \\
+
+\hline
+Photon identification BDT score &  CMS\_hgg\_phoIdMva  &  0.2 - 9.0  &  0.1 - 41.9  \\
+Per-photon energy resolution estimate &  CMS\_hgg\_SigmaEOverEShift  &  0.2 - 11.8  &  0.3 - 20.0  \\
+\hline
+b-tagging efficiency &  CMS\_eff\_b  &   -  &  14.3 - 29.3   \\
+Lepton identification efficiency &  CMS\_eff\_e, CMS\_eff\_m  &  0.3 - 1.2, 0.2 - 2.7   &  0.4 - 1.2, 0.2 - 2.9   \\
+Lepton isolation &  CMS\_eff\_m\_MiniIso  &   -   &  -   \\
+\hline
+Integrated luminosity &  lumi\_13TeV  &  2.5  &  2.5  \\
+
+\hline
+Non-linearity of the photon energy &  CMS\_hgg\_nuisance\_NonLinearity\_13TeVscale  &  0.1  &  Need official dat file  \\
+Electromagnetic shower modelling &  CMS\_hgg\_nuisance\_Geant4\_13TeVscale  &  0.05  & Need official dat file  \\
+
+Nonuniformity of light collection EE & CMS\_hgg\_nuisance\_FNUFEE\_scale  &  0.4  &   Need official dat file \\
+Nonuniformity of light collection EB & CMS\_hgg\_nuisance\_FNUFEB\_scale  &  1.4  &   Need official dat file \\
+Modeling of the Central Barrel material budget  & CMS\_hgg\_nuisance\_MaterialCentral\_scale  &  0.4  &   Need official dat file \\
+Modeling of the Outer Barrel material budget  & CMS\_hgg\_nuisance\_MaterialCentral\_scale  &  2.4  &   Need official dat file \\
+Modeling of the Forward material budget  & CMS\_hgg\_nuisance\_MaterialForward\_scale  &  2.4  &   Need official dat file \\
+
+Shower shape corrections LowR9 EE  & CMS\_hgg\_nuisance\_ShowerShapeLowR9EE\_scale  &  0.6  &   Need official dat file \\
+Shower shape corrections LowR9 EB & CMS\_hgg\_nuisance\_ShowerShapeLowR9EB\_scale  &  0.0  &   Need official dat file \\
+Shower shape corrections HighR9 EB & CMS\_hgg\_nuisance\_ShowerShapeHighR9EB\_scale  &  0.4  &   Need official dat file \\
+Shower shape corrections HighR9 EE & CMS\_hgg\_nuisance\_ShowerShapeHighR9EE\_scale  &  0.0  &   Need official dat file \\
+
+%Shower shape corrections LowR9 EE  & CMS\_hgg\_nuisance\_ShowerShapeLowR9EE\_scale  &  0.2  &  0.01 - 0.15 (on the energy scale) \\
+%Shower shape corrections LowR9 EB & CMS\_hgg\_nuisance\_ShowerShapeLowR9EB\_scale  &  0.4  &   0.01 - 0.15 (on the energy scale)\\
+%Shower shape corrections HighR9 EB & CMS\_hgg\_nuisance\_ShowerShapeHighR9EB\_scale  &  0.6  & 0.01 - 0.15  (on the energy scale) \\
+%Shower shape corrections HighR9 EE & CMS\_hgg\_nuisance\_ShowerShapeHighR9EE\_scale  &  0.5  &  0.01 - 0.15 (on the energy scale) \\
+
+Gain1 EB & CMS\_hgg\_nuisance\_Gain1EB\_13TeVscale  &  0.4  &   Need official dat file \\
+Gain6 EB & CMS\_hgg\_nuisance\_Gain6EB\_13TeVscale  &  0.1  &   Need official dat file \\
+ &  CMS\_hgg\_LooseMvaSF  &  -  &  -  \\
+
+ &  CMS\_hgg\_MET\_Unclustered  &  0.9 - 44.5  &  12.1 - 61.4  \\
+ &  CMS\_hgg\_MET\_JER  &  0.1 - 79.9  &  9.8 - 126.9  \\
+ &  CMS\_hgg\_MET\_PhotonScale  &  0.1 - 30.2  &  0.6 - 41.6  \\
+ &  CMS\_hgg\_MET\_JEC  &  0.2 - 19.4  &  1.1 - 21.0  \\
+
+\hline
+
+Photon energy scale HighR9 EE  & CMS\_hgg\_nuisance\_HighR9EE\_13TeVscale  &  0.2  &   Need official dat file \\
+Photon energy scale HighR9 EB & CMS\_hgg\_nuisance\_HighR9EB\_13TeVscale  &  0.4  &   Need official dat file \\
+Photon energy scale LowR9 EE & CMS\_hgg\_nuisance\_LowR9EE\_13TeVscale  &  0.1  &   Need official dat file \\
+Photon energy scale LowR9 EB & CMS\_hgg\_nuisance\_LowR9EB\_13TeVscale  &  0.0  &   Need official dat file \\
+Photon energy resolution HighR9 EB Rho & CMS\_hgg\_nuisance\_HighR9EBRho\_13TeVsmear  &  0.0  &   Need official dat file \\
+Photon energy resolution LowR9 EE Phi & CMS\_hgg\_nuisance\_LowR9EEPhi\_13TeVsmear  &  3.6  &   Need official dat file \\
+Photon energy resolution LowR9 EE Rho & CMS\_hgg\_nuisance\_LowR9EERho\_13TeVsmear  &  0.0  &   Need official dat file \\
+Photon energy resolution HighR9 EB Phi & CMS\_hgg\_nuisance\_HighR9EBPhi\_13TeVsmear  &  1.2  &   Need official dat file \\
+Photon energy resolution HighR9 EE Rho & CMS\_hgg\_nuisance\_HighR9EERho\_13TeVsmear  &  0.0  &   Need official dat file \\
+Photon energy resolution LowR9 EB Phi& CMS\_hgg\_nuisance\_LowR9EBPhi\_13TeVsmear  &  25.9  &   Need official dat file \\
+Photon energy resolution HighR9 EE Phi& CMS\_hgg\_nuisance\_HighR9EEPhi\_13TeVsmear  &  0.7  &   Need official dat file \\
+Photon energy resolution LowR9 EB Rho& CMS\_hgg\_nuisance\_LowR9EBRho\_13TeVsmear  &  0.0  &   Need official dat file  \\
+
+
+\hline
+
+Jet energy scale migration (0) &  CMS\_hgg\_JEC\_migration0  &  -  &  -  \\
+Jet energy scale migration (1) &  CMS\_hgg\_JEC\_migration1  &  -  &  -  \\
+Jet energy scale migration (2) &  CMS\_hgg\_JEC\_migration2  &  -  &  -  \\
+
+Jet energy resolution  migration (0) &  CMS\_hgg\_JER\_migration0  &    &    \\
+Jet energy resolution  migration (1) &  CMS\_hgg\_JER\_migration1  &    &    \\
+Jet energy resolution  migration (2) &  CMS\_hgg\_JER\_migration2  &    &    \\
+
+
+\end{tabular}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+}
+\end{sidewaystable}
+
+
+\begin{sidewaystable}
+\resizebox{\linewidth}{!}{%
+    \centering
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{tabular}{  c | c |  c | c }
+\hline
+\hline
+Systematic & Datacard value & Uncertainty (\%) & Official analysis in VHTags categories (\%) \\ 
+\hline
+\hline
+
+\hline
+Branching ratio &  BR\_hgg  &  2.0 - 2.1  &  2.0 - 2.1  \\
+
+PDF yield (ggH) &  pdf\_Higgs\_gg  &  3.2 - 3.2  &  3.2 - 3.2  \\
+PDF yield (qqH,WH,ZH) &  pdf\_Higgs\_qqbar  &  1.6 - 2.1  &  1.6 - 2.1  \\
+PDF yield (ttH) &  pdf\_Higgs\_ttH  &  3.6 - 3.6  &  3.6 - 3.6  \\
+
+QCD scale yield (ggH) &  QCDscale\_ggH  &  3.9 - 3.9  &  3.9 - 3.9  \\
+QCD scale yield (qqH) &  QCDscale\_qqH  &  0.3 - 0.4  &  0.3 - 0.4  \\
+QCD scale yield (ttH) &  QCDscale\_ttH  &  5.8 - 9.2  &  4.9 - 23.9  \\
+QCD scale yield (WH,ZH) &  QCDscale\_VH  &  0.5 - 3.8  &  0.5 - 3.8  \\
+
+PDF weights (60) &  CMS\_hgg\_pdfWeight\_(0-59)  &  --  &  --  \\
+
+QCD scale weight (2)  &  CMS\_hgg\_scaleWeight\_2  &  0.2 - 178.7  &  0.3 - 43.4  \\
+QCD scale weight (1) &  CMS\_hgg\_scaleWeight\_1   & 0.1 - 134.3  &  0.2 - 18.2   \\
+QCD scale weight (0)  &  CMS\_hgg\_scaleWeight\_0  & 0.1 - 176.5  &  0.1 - 14.5   \\
+
+AlphaS weight &  CMS\_hgg\_alphaSWeight\_0  &  0.1 - 190.0  &  0.1 - 2.9  \\
+
+Underline event &  CMS\_hgg\_UE  & need files  &  0.7 - 16.1  \\
+Parton shower &  CMS\_hgg\_PS  & need files  &  0.3 - 9.8  \\
+
+
+\hline
+PUJID shift  migration (0)  &  CMS\_hgg\_PUJIDShift\_migration0  &  -  &  -   \\
+PUJID shift  migration (1)  &  CMS\_hgg\_PUJIDShift\_migration1  &  -  &  -   \\
+PUJID shift  migration (2)  &  CMS\_hgg\_PUJIDShift\_migration2  &  -  &  -          \\
+
+ggF contamination in VBFTags migration (0) &  CMS\_hgg\_JetVeto\_migration0  &  - &  -  \\
+ggF contamination in VBFTags migration (1) &  CMS\_hgg\_JetVeto\_migration1  &  - &  -  \\
+ggF contamination in VBFTags migration (2) &  CMS\_hgg\_JetVeto\_migration2  &  - &  -  \\
+
+ggF contamination in VBFTags yield & CMS\_hgg\_JetVeto\_migration3 & 28.9 & 28.9 \\
+
+
+ggF contamination MC size  (TTHTags) &  CMS\_hgg\_tth\_mc\_low\_stat  &  not applicable  &  not applicable  \\
+ggF contamination PS  (TTHTags) &  CMS\_hgg\_tth\_parton\_shower  &  not applicable  &  not applicable  \\
+ggF contamination gluon splitting (TTHTags) &  CMS\_hgg\_tth\_gluon\_splitting  &  not applicable  &  not applicable  \\
+
+\hline
+Background modelling & pdfindex\_VBFTag\_(0-3)\_13TeV & discrete profiling method & discrete profiling method \\
+
+
+
+\end{tabular}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+}
+\end{sidewaystable}
+
+
+
+
+
+% =======================================================================================
+%\begin{thebibliography}{99}
+
+%\bibitem{crawford}
+%  NESTOR note 030.2007, Michael J. Ng,
+%The NuBE LED photodiode system.
+
+%\cite{Anassontzis:1994by}
+%\bibitem{Anassontzis:1994by}
+%  E.~G.~Anassontzis, P.~Ioannou, C.~Kourkoumelis, L.~K.~Resvanis and H.~Bradner,
+%  Light transmissivity in the NESTOR site,
+%  Nucl.\ Instrum.\ Meth.\  A {\bf 349}, 242 (1994).
+%  %%CITATION = NUIMA,A349,242;%%
+
+
+%\end{thebibliography}
+
+\end{document}
